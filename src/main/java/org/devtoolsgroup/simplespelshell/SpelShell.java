@@ -62,7 +62,7 @@ public class SpelShell {
     private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
     private String prompt = ">>> ";
-    private boolean printEvalResult = true;
+    private int printEvalResultLength = 100;
     private Object rootObject;
 
     public SpelShell() {
@@ -79,18 +79,20 @@ public class SpelShell {
             String expr = null;
             String rewrittenExpr = null;
             try {
-                output.print(prompt);
+                print(prompt);
                 expr = readExpr(reader);
                 if (expr == null) {
                     return;
                 }
                 rewrittenExpr = rewriteExpr(expr);
                 Object res = eval(rewrittenExpr);
-                if (printEvalResult && res != null) {
-                    output.println(res);
+                if (printEvalResultLength > 0 && res != null) {
+                    String resStr = res.toString();
+                    String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
+                    println(resStr.substring(0, Math.min(resStr.length(), printEvalResultLength)) + ellipsis);
                 }
             } catch (Exception ex) {
-                output.println(ex.getMessage());
+                println(ex.getMessage());
                 ex.printStackTrace(output);
                 if (stopOnException) {
                     if (rewrittenExpr != null || expr != null) {
@@ -132,7 +134,7 @@ public class SpelShell {
     }
 
     public void println(Object obj) {
-        output.print(obj.toString() + "\n");
+        output.println(obj.toString());
     }
 
     public String format(String format, Object... args) {
@@ -251,8 +253,8 @@ public class SpelShell {
         this.prompt = prompt;
     }
 
-    public void setPrintEvalResult(boolean printEvalResult) {
-        this.printEvalResult = printEvalResult;
+    public void setPrintEvalResultLength(int printEvalResultLength) {
+        this.printEvalResultLength = printEvalResultLength;
     }
 
     public void setRootObject(Object rootObject) {
