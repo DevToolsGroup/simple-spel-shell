@@ -41,7 +41,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,6 +68,8 @@ public class SpelShell implements Shell {
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
     private Object rootObject;
+    private final Map<String, Object> variables = new ConcurrentHashMap<>();
+    private final AtomicLong variablesHash = new AtomicLong(0);
 
     public SpelShell() {
         methodsToHide = new HashSet<>();
@@ -173,9 +178,44 @@ public class SpelShell implements Shell {
         allMethods.forEach(this::println);
     }
 
+    @Override
+    public Object var(String name, Object value) {
+        if (name == null) {
+            throw new SpelShellException("Variable name must not be null.");
+        }
+        if (value == null) {
+            variables.remove(name);
+        } else {
+            variables.put(name, value);
+        }
+        variablesHash.incrementAndGet();
+        return value;
+    }
+
+    @Override
+    public Object var(String name) {
+        return variables.get(name);
+    }
+
+    @Override
+    public void var() {
+        variables.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .forEach(entry ->
+                print(format(
+                    "%s: %s\n",
+                    entry.getKey(),
+                    entry.getValue() == null ? "null" : entry.getValue().getClass().getName()
+                ))
+            );
+    }
+
     private Object eval(String expr) {
-        lastEvalResult = parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class);
-        setLastEvalResult(lastEvalResult);
+        long varHash = variablesHash.get();
+        setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
+        if (variablesHash.get() != varHash) {
+            initSpelCtx();
+        }
         return lastEvalResult;
     }
 
@@ -240,6 +280,7 @@ public class SpelShell implements Shell {
 
     private void initSpelCtx() {
         spelCtx = new StandardEvaluationContext();
+        variables.forEach(spelCtx::setVariable);
         setLastEvalResult(lastEvalResult);
     }
 
@@ -270,6 +311,11 @@ public class SpelShell implements Shell {
     @Override
     public void setPrompt(Supplier<String> prompt) {
         this.prompt = prompt;
+    }
+
+    @Override
+    public void setPrompt(String prompt) {
+        setPrompt(() -> prompt);
     }
 
     @Override

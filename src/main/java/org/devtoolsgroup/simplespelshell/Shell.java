@@ -57,6 +57,12 @@ public interface Shell {
 
     void help();
 
+    Object var(String name, Object value);
+
+    Object var(String name);
+
+    void var();
+
     void setInput(InputStream input, Charset cs);
 
     void setInput(InputStream input);
@@ -64,6 +70,8 @@ public interface Shell {
     void setOutput(PrintStream output);
 
     void setPrompt(Supplier<String> prompt);
+
+    void setPrompt(String prompt);
 
     void setPrintEvalResultLength(int printEvalResultLength);
 
