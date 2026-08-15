@@ -77,7 +77,6 @@ public class SpelShell {
         BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
         while (true) {
             String expr = null;
-            String rewrittenExpr = null;
             try {
                 print(prompt);
                 expr = readExpr(reader);
@@ -87,8 +86,8 @@ public class SpelShell {
                 if (expr.isBlank()) {
                     continue;
                 }
-                rewrittenExpr = rewriteExpr(expr);
-                Object res = eval(rewrittenExpr);
+                expr = rewriteExpr(expr);
+                Object res = eval(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
                     String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
@@ -98,10 +97,10 @@ public class SpelShell {
                 println(ex.getMessage());
                 ex.printStackTrace(output);
                 if (stopOnException) {
-                    if (rewrittenExpr != null || expr != null) {
+                    if (expr != null) {
                         throw new SpelShellException(
                             "An error occurred while evaluating expression\nExpression: %s\nError: %s".formatted(
-                                rewrittenExpr != null ? rewrittenExpr : expr, ex.getMessage()
+                                expr, ex.getMessage()
                             ),
                             ex
                         );
