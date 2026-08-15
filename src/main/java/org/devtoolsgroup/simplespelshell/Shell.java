@@ -58,6 +58,8 @@ public interface Shell {
 
     void exit();
 
+    void help(String filter);
+
     void help();
 
     Object var(String name, Object value);

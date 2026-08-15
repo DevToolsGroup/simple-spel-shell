@@ -66,7 +66,6 @@ public class SpelShell implements Shell {
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final Set<String> methodsToHide;
-    private List<String> allMethods;
     private List<String> zeroArgMethods;
     private List<String> oneArgMethods;
     private StandardEvaluationContext spelCtx;
@@ -195,8 +194,29 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void help(String filter) {
+        Pattern pattern = makePattern(filter);
+        Arrays.stream(rootObject.getClass().getMethods())
+            .filter(method -> {
+                String methodName = method.getName();
+                return isMethodToShow(methodName) && pattern.matcher(methodName.toLowerCase()).matches();
+            })
+            .map(method -> {
+                String params = Arrays.stream(method.getParameterTypes())
+                    .map(Class::getName)
+                    .collect(Collectors.joining(", "));
+                String returnType = method.getReturnType().getName();
+                String name = method.getName();
+                return "%s(%s): %s".formatted(name, params, returnType);
+            })
+            .distinct()
+            .sorted()
+            .forEach(this::println);
+    }
+
+    @Override
     public void help() {
-        allMethods.forEach(this::println);
+        help("");
     }
 
     @Override
@@ -369,19 +389,6 @@ public class SpelShell implements Shell {
     @Override
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
-        allMethods = Arrays.stream(rootObject.getClass().getMethods())
-            .filter(method -> isMethodToShow(method.getName()))
-            .map(method -> {
-                String params = Arrays.stream(method.getParameterTypes())
-                    .map(Class::getName)
-                    .collect(Collectors.joining(", "));
-                String returnType = method.getReturnType().getName();
-                String name = method.getName();
-                return "%s(%s): %s".formatted(name, params, returnType);
-            })
-            .distinct()
-            .sorted()
-            .toList();
         zeroArgMethods = getMethodsWithNumOfArgs(rootObject, 0);
         oneArgMethods = getMethodsWithNumOfArgs(rootObject, 1);
     }
