@@ -94,6 +94,8 @@ public interface Shell {
 
     void setOutput(PrintStream output);
 
+    void setPrintExpression(boolean printExpression);
+
     void setPrompt(Supplier<String> prompt);
 
     void setPrompt(String prompt);

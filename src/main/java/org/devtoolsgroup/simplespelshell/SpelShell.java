@@ -72,6 +72,7 @@ public class SpelShell implements Shell {
     private Object lastEvalResult;
     private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
+    private boolean printExpression;
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
     private List<Converter<?, ?>> typeConverters = new ArrayList<>();
@@ -114,6 +115,9 @@ public class SpelShell implements Shell {
                     continue;
                 }
                 expr = rewriteExpr(expr, zeroArgMethods, oneArgMethods);
+                if (printExpression) {
+                    println(expr);
+                }
                 Object res = eval(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
@@ -377,6 +381,11 @@ public class SpelShell implements Shell {
     @Override
     public void setOutput(PrintStream output) {
         this.output = output;
+    }
+
+    @Override
+    public void setPrintExpression(boolean printExpression) {
+        this.printExpression = printExpression;
     }
 
     @Override

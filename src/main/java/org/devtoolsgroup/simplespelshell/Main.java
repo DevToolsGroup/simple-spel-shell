@@ -33,8 +33,16 @@ public class Main extends SpelShell {
         super(Path.of(""));
     }
 
-    static void main(String[] args) {
-        new Main().runScript(System.in, false);
+    static void main(String[] args) throws IOException {
+        Main shell = new Main();
+
+        shell.setPrompt("");
+        shell.setPrintEvalResultLength(0);
+        shell.runScript("pi=T(java.lang.Math).PI\ne=T(java.lang.Math).E", true);
+
+        shell.setPrompt(">>> ");
+        shell.setPrintEvalResultLength(100);
+        shell.runScript(System.in, false);
     }
 
     public void sayHi() throws IOException {
