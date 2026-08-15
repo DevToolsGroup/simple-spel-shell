@@ -28,11 +28,16 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -68,8 +73,8 @@ public class SpelShell {
         initSpelCtx();
     }
 
-    public void runScript(InputStream scriptInp, boolean stopOnException) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp));
+    public void runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
         while (true) {
             String expr = null;
             String rewrittenExpr = null;
@@ -96,6 +101,38 @@ public class SpelShell {
                 }
             }
         }
+    }
+
+    public void runScript(InputStream scriptInp, boolean stopOnException) {
+        runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
+    }
+
+    public void runScript(String script, boolean stopOnException) {
+        runScript(
+            new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
+            StandardCharsets.UTF_8,
+            stopOnException
+        );
+    }
+
+    public void runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
+        runScript(Files.readString(path, cs), stopOnException);
+    }
+
+    public void runScript(Path path, boolean stopOnException) throws IOException {
+        runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
+    }
+
+    public void print(Object obj) {
+        output.print(obj.toString());
+    }
+
+    public void println(Object obj) {
+        output.print(obj.toString() + "\n");
+    }
+
+    public String format(String format, Object... args) {
+        return String.format(format, args);
     }
 
     private Object eval(String expr) {
