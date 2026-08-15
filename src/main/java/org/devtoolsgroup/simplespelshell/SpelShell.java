@@ -28,11 +28,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.EvaluationException;
-import org.springframework.expression.Expression;
 import org.springframework.expression.Operation;
 import org.springframework.expression.OperatorOverloader;
-import org.springframework.expression.spel.SpelCompilerMode;
-import org.springframework.expression.spel.SpelParserConfiguration;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
@@ -77,12 +74,6 @@ public class SpelShell implements Shell {
     private static final Pattern TRAILING_SLASHES_PAT = Pattern.compile("^(.*)(\\\\+)\\s*$");
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
-    private final SpelExpressionParser parserCompMixed = new SpelExpressionParser(new SpelParserConfiguration(
-        SpelCompilerMode.MIXED, this.getClass().getClassLoader()
-    ));
-    private final SpelExpressionParser parserCompImmediate = new SpelExpressionParser(new SpelParserConfiguration(
-        SpelCompilerMode.IMMEDIATE, this.getClass().getClassLoader()
-    ));
     private final Set<String> methodsToHide;
     private List<String> zeroArgMethods;
     private List<String> oneArgMethods;
@@ -499,21 +490,11 @@ public class SpelShell implements Shell {
 
     private Object eval(String expr) {
         long varHash = variablesHash.get();
-        setLastEvalResult(parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
+        setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
         if (variablesHash.get() != varHash) {
             initSpelCtx();
         }
         return lastEvalResult;
-    }
-
-    private Expression parseExpression(String expr) {
-        if (expr.startsWith("``") && expr.length() > 2) {
-            return parserCompMixed.parseExpression(expr.substring(2));
-        }
-        if (expr.startsWith("`") && expr.length() > 1) {
-            return parserCompImmediate.parseExpression(expr.substring(1));
-        }
-        return parser.parseExpression(expr);
     }
 
     private static String readExpr(BufferedReader reader) throws IOException {
