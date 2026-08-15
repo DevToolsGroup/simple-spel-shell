@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -105,6 +106,8 @@ public interface Shell {
     void setPrintExpression(boolean printExpression);
 
     void setPrompt(Supplier<String> prompt);
+
+    void setExpressionInterceptor(BiFunction<String, Consumer<String>, String> expressionInterceptor);
 
     void setPrompt(String prompt);
 

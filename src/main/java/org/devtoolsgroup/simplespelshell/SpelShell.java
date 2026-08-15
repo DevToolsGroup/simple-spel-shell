@@ -62,6 +62,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
@@ -91,6 +92,7 @@ public class SpelShell implements Shell {
     private PrintStream output = System.out;
     private boolean printExpression;
     private Supplier<String> prompt = () -> ">>> ";
+    private BiFunction<String, Consumer<String>, String> expressionInterceptor;
     private int printEvalResultLength = 100;
     private File exprHistoryFile;
     private List<Converter<?, ?>> typeConverters = new ArrayList<>();
@@ -128,11 +130,19 @@ public class SpelShell implements Shell {
     @Override
     public void runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
+        Consumer<String> saveToHist =
+            exprHistoryFile == null
+                ? _ -> {
+            }
+                : str -> SpelShell.saveExprToHistFile(str, exprHistoryFile);
         while (true) {
             String expr = null;
             try {
                 print(prompt.get());
                 expr = readExpr(reader);
+                if (expressionInterceptor != null) {
+                    expr = expressionInterceptor.apply(expr, saveToHist);
+                }
                 if (expr == null) {
                     return;
                 }
@@ -144,9 +154,7 @@ public class SpelShell implements Shell {
                     println(expr);
                 }
                 Object res = eval(expr);
-                if (exprHistoryFile != null) {
-                    saveExprToHistFile(expr, exprHistoryFile);
-                }
+                saveToHist.accept(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
                     String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
@@ -443,6 +451,11 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void setExpressionInterceptor(BiFunction<String, Consumer<String>, String> expressionInterceptor) {
+        this.expressionInterceptor = expressionInterceptor;
+    }
+
+    @Override
     public void setPrompt(String prompt) {
         setPrompt(() -> prompt);
     }
@@ -593,10 +606,12 @@ public class SpelShell implements Shell {
         return child.toAbsolutePath().normalize().startsWith(parent.toAbsolutePath().normalize());
     }
 
-    private static void saveExprToHistFile(String expr, File histFile) throws IOException {
+    private static void saveExprToHistFile(String expr, File histFile) {
         try (FileWriter wr = new FileWriter(histFile, StandardCharsets.UTF_8, true)) {
             wr.append("\n").append(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
                 .append("\n").append(expr);
+        } catch (IOException ex) {
+            throw new SpelShellException(ex.getMessage(), ex);
         }
     }
 
