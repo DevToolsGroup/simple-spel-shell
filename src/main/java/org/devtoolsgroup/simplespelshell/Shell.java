@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 public interface Shell {
 
@@ -62,7 +63,7 @@ public interface Shell {
 
     void setOutput(PrintStream output);
 
-    void setPrompt(String prompt);
+    void setPrompt(Supplier<String> prompt);
 
     void setPrintEvalResultLength(int printEvalResultLength);
 

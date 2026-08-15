@@ -42,6 +42,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -61,7 +62,7 @@ public class SpelShell implements Shell {
     private Object lastEvalResult;
     private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
-    private String prompt = ">>> ";
+    private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
     private Object rootObject;
 
@@ -79,7 +80,7 @@ public class SpelShell implements Shell {
         while (true) {
             String expr = null;
             try {
-                print(prompt);
+                print(prompt.get());
                 expr = readExpr(reader);
                 if (expr == null) {
                     return;
@@ -267,7 +268,7 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setPrompt(String prompt) {
+    public void setPrompt(Supplier<String> prompt) {
         this.prompt = prompt;
     }
 
