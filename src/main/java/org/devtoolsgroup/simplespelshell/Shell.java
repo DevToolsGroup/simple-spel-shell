@@ -78,6 +78,8 @@ public interface Shell {
 
     String read(Path path) throws IOException;
 
+    void mkdir(boolean autoCd, Path path);
+
     void mkdir(Path path);
 
     void ll() throws IOException;

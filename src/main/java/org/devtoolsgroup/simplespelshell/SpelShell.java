@@ -284,11 +284,19 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void mkdir(Path path) {
+    public void mkdir(boolean autoCd, Path path) {
         if (!getFile(path).mkdirs()) {
             throw new SpelShellException("There was an error when creating one of the specified directories");
         }
-        cd(path);
+        if (autoCd) {
+            cd(path);
+            pwd();
+        }
+    }
+
+    @Override
+    public void mkdir(Path path) {
+        mkdir(true, path);
     }
 
     @Override
