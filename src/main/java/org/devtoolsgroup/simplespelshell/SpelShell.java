@@ -24,11 +24,15 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.jspecify.annotations.Nullable;
+import org.springframework.core.convert.TypeDescriptor;
+import org.springframework.expression.TypeConverter;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,9 +40,12 @@ import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,16 +74,23 @@ public class SpelShell implements Shell {
     private PrintStream output = System.out;
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
+    private TypeConverter typeConverter;
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private final AtomicLong variablesHash = new AtomicLong(0);
+    private Path curDir;
+    private CurrentDirectoryValidator currentDirectoryValidator;
 
     public SpelShell() {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
-            "setInput", "setOutput", "setGlobalFunctions"));
+            "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "setTypeConverter",
+            "setRootObject"));
         setRootObject(this);
+        setTypeConverter(new BasicTypeConverter());
         initSpelCtx();
+        cd(Path.of("").toAbsolutePath());
+        setCurrentDirectoryValidator(new SandboxDirValidator(curDir));
     }
 
     @Override
@@ -93,7 +107,7 @@ public class SpelShell implements Shell {
                 if (expr.isBlank()) {
                     continue;
                 }
-                expr = rewriteExpr(expr);
+                expr = rewriteExpr(expr, zeroArgMethods, oneArgMethods);
                 Object res = eval(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
@@ -210,87 +224,96 @@ public class SpelShell implements Shell {
             );
     }
 
-    private Object eval(String expr) {
-        long varHash = variablesHash.get();
-        setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
-        if (variablesHash.get() != varHash) {
-            initSpelCtx();
+    @Override
+    public void cd(Path path) {
+        if (path.isAbsolute()) {
+            path = path.toAbsolutePath().normalize();
+        } else {
+            path = curDir.resolve(path).toAbsolutePath().normalize();
         }
-        return lastEvalResult;
+        if (!Files.exists(path)) {
+            throw new SpelShellException("The directory %s doesn't exist.".formatted(path));
+        }
+        if (!Files.isDirectory(path)) {
+            throw new SpelShellException("%s is not a directory.".formatted(path));
+        }
+        if (currentDirectoryValidator != null) {
+            currentDirectoryValidator.validate(path);
+        }
+        curDir = path;
     }
 
-    private String readExpr(BufferedReader reader) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        while (true) {
-            String line = reader.readLine();
-            if (line == null) {
-                return sb.isEmpty() ? null : sb.toString();
+    @Override
+    public void cd() {
+        cd(Path.of(".."));
+    }
+
+    @Override
+    public void pwd() {
+        println(curDir);
+    }
+
+    @Override
+    public File getFile(Path path) {
+        return curDir.resolve(path).toFile();
+    }
+
+    @Override
+    public void write(Path path, String text) throws IOException {
+        Path pathToWriteTo = curDir.resolve(path);
+        if (!isParentChild(curDir, pathToWriteTo)) {
+            throw new SpelShellException("Cannot write outside of the current directory " + curDir);
+        }
+        Files.writeString(pathToWriteTo, text, StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public String read(Path path) throws IOException {
+        return Files.readString(curDir.resolve(path), StandardCharsets.UTF_8);
+    }
+
+    @Override
+    public void mkdir(Path path) {
+        if (!getFile(path).mkdirs()) {
+            throw new SpelShellException("There was an error when creating one of the specified directories");
+        }
+        cd(path);
+    }
+
+    @Override
+    public void ll() throws IOException {
+        List<Path> children;
+        try (DirectoryStream<Path> entries = Files.newDirectoryStream(curDir)) {
+            children = new ArrayList<>();
+            for (Path entry : entries) {
+                children.add(entry);
             }
-            Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
-            if (matcher.matches() && matcher.group(2).length() % 2 == 1) {
-                sb.append(matcher.group(1)).append(" ");
+        }
+        children.sort(Comparator.comparing(
+            p -> p.getFileName().toString(),
+            String.CASE_INSENSITIVE_ORDER
+        ));
+
+        // Find the largest size so all sizes can be right-aligned.
+        long maxSize = 0;
+        for (Path child : children) {
+            if (Files.isRegularFile(child)) {
+                maxSize = Math.max(maxSize, Files.size(child));
+            }
+        }
+
+        int width = String.valueOf(maxSize).length();
+
+        for (Path child : children) {
+            String name = child.getFileName().toString();
+
+            if (Files.isDirectory(child)) {
+                System.out.printf("%" + width + "s %s%n", "", name);
             } else {
-                sb.append(line);
-                return sb.toString();
+                long size = Files.size(child);
+                System.out.printf("%" + width + "d %s%n", size, name);
             }
         }
-    }
-
-    private String rewriteExpr(String expr) {
-        Matcher matcher = SET_VAR_PAT.matcher(expr);
-        if (matcher.matches()) {
-            return "var('%s',%s)".formatted(matcher.group(1), matcher.group(2));
-        }
-        matcher = ZERO_ARG_METHOD_PAT.matcher(expr);
-        if (matcher.matches()) {
-            return "%s()".formatted(findByPattern(matcher.group(1), zeroArgMethods));
-        }
-        matcher = ONE_ARG_METHOD_PAT.matcher(expr);
-        if (matcher.matches()) {
-            return "%s(%s)".formatted(findByPattern(matcher.group(1), oneArgMethods), matcher.group(2));
-        }
-        return expr;
-    }
-
-    private String findByPattern(String patStr, List<String> options) {
-        Pattern pattern = makePattern(patStr);
-        List<String> found = options.stream()
-            .filter(option -> pattern.matcher(option.toLowerCase()).matches())
-            .toList();
-        if (found.isEmpty()) {
-            throw new SpelShellException("Cannot find a method by pattern '%s'".formatted(patStr));
-        }
-        if (found.size() > 1) {
-            throw new SpelShellException("Multiple methods match the pattern '%s':\n%s".formatted(
-                patStr,
-                String.join("\n", found)
-            ));
-        }
-        return found.getFirst();
-    }
-
-    private List<String> getMethodsWithNumOfArgs(Object rootObject, int numOfArgs) {
-        return Arrays.stream(rootObject.getClass().getMethods())
-            .filter(m -> m.getGenericParameterTypes().length == numOfArgs)
-            .map(Method::getName)
-            .filter(this::isMethodToShow)
-            .distinct()
-            .toList();
-    }
-
-    private void initSpelCtx() {
-        spelCtx = new StandardEvaluationContext();
-        variables.forEach(spelCtx::setVariable);
-        setLastEvalResult(lastEvalResult);
-    }
-
-    private void setLastEvalResult(Object res) {
-        lastEvalResult = res;
-        spelCtx.setVariable("_", res);
-    }
-
-    private Pattern makePattern(String pat) {
-        return Pattern.compile(".*" + String.join(".*", pat.toLowerCase().split("")) + ".*");
     }
 
     @Override
@@ -336,8 +359,111 @@ public class SpelShell implements Shell {
         oneArgMethods = getMethodsWithNumOfArgs(rootObject, 1);
     }
 
+    @Override
+    public void setTypeConverter(TypeConverter typeConverter) {
+        this.typeConverter = typeConverter;
+    }
+
+    @Override
+    public void setCurrentDirectoryValidator(CurrentDirectoryValidator currentDirectoryValidator) {
+        this.currentDirectoryValidator = currentDirectoryValidator;
+        if (currentDirectoryValidator != null) {
+            currentDirectoryValidator.validate(curDir);
+        }
+    }
+
+    private Object eval(String expr) {
+        long varHash = variablesHash.get();
+        setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
+        if (variablesHash.get() != varHash) {
+            initSpelCtx();
+        }
+        return lastEvalResult;
+    }
+
+    private static String readExpr(BufferedReader reader) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        while (true) {
+            String line = reader.readLine();
+            if (line == null) {
+                return sb.isEmpty() ? null : sb.toString();
+            }
+            Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
+            if (matcher.matches() && matcher.group(2).length() % 2 == 1) {
+                sb.append(matcher.group(1)).append(" ");
+            } else {
+                sb.append(line);
+                return sb.toString();
+            }
+        }
+    }
+
+    private static String rewriteExpr(String expr, List<String> zeroArgMethods, List<String> oneArgMethods) {
+        Matcher matcher = SET_VAR_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "var('%s',%s)".formatted(matcher.group(1), matcher.group(2));
+        }
+        matcher = ZERO_ARG_METHOD_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "%s()".formatted(findByPattern(matcher.group(1), zeroArgMethods));
+        }
+        matcher = ONE_ARG_METHOD_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "%s(%s)".formatted(findByPattern(matcher.group(1), oneArgMethods), matcher.group(2));
+        }
+        return expr;
+    }
+
+    private static String findByPattern(String patStr, List<String> options) {
+        Pattern pattern = makePattern(patStr);
+        List<String> found = options.stream()
+            .filter(option -> pattern.matcher(option.toLowerCase()).matches())
+            .toList();
+        if (found.isEmpty()) {
+            throw new SpelShellException("Cannot find a method by pattern '%s'".formatted(patStr));
+        }
+        if (found.size() > 1) {
+            throw new SpelShellException("Multiple methods match the pattern '%s':\n%s".formatted(
+                patStr,
+                String.join("\n", found)
+            ));
+        }
+        return found.getFirst();
+    }
+
+    private List<String> getMethodsWithNumOfArgs(Object rootObject, int numOfArgs) {
+        return Arrays.stream(rootObject.getClass().getMethods())
+            .filter(m -> m.getGenericParameterTypes().length == numOfArgs)
+            .map(Method::getName)
+            .filter(this::isMethodToShow)
+            .distinct()
+            .toList();
+    }
+
+    private void initSpelCtx() {
+        spelCtx = new StandardEvaluationContext();
+        if (typeConverter != null) {
+            spelCtx.setTypeConverter(typeConverter);
+        }
+        variables.forEach(spelCtx::setVariable);
+        setLastEvalResult(lastEvalResult);
+    }
+
+    private void setLastEvalResult(Object res) {
+        lastEvalResult = res;
+        spelCtx.setVariable("_", res);
+    }
+
+    private static Pattern makePattern(String pat) {
+        return Pattern.compile(".*" + String.join(".*", pat.toLowerCase().split("")) + ".*");
+    }
+
     private boolean isMethodToShow(String name) {
         return !methodsToHide.contains(name);
+    }
+
+    private static boolean isParentChild(Path parent, Path child) {
+        return child.toAbsolutePath().normalize().startsWith(parent.toAbsolutePath().normalize());
     }
 
     public static class SpelShellException extends RuntimeException {
@@ -347,6 +473,63 @@ public class SpelShell implements Shell {
 
         public SpelShellException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+
+    public static class BasicTypeConverter implements TypeConverter {
+
+        public static final TypeDescriptor STRING_CLASS = TypeDescriptor.valueOf(String.class);
+        public static final TypeDescriptor PATH_CLASS = TypeDescriptor.valueOf(Path.class);
+
+        @Override
+        public boolean canConvert(@Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
+            if (sourceType == null) {
+                return true;
+            }
+
+            if (sourceType.isAssignableTo(STRING_CLASS)) {
+                return targetType.isAssignableTo(PATH_CLASS);
+            }
+            if (sourceType.isAssignableTo(PATH_CLASS)) {
+                return targetType.isAssignableTo(STRING_CLASS);
+            }
+            return false;
+        }
+
+        @Override
+        public @Nullable Object convertValue(@Nullable Object value, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
+            if (value == null) {
+                return null;
+            }
+            if (sourceType.equals(targetType)) {
+                return value;
+            }
+            if (sourceType.isAssignableTo(STRING_CLASS)) {
+                if (targetType.isAssignableTo(PATH_CLASS)) {
+                    return Path.of((String) value);
+                }
+            }
+            if (sourceType.isAssignableTo(PATH_CLASS)) {
+                if (targetType.isAssignableTo(STRING_CLASS)) {
+                    return ((Path) value).toString();
+                }
+            }
+            throw new SpelShellException("Cannot convert %s to %s.".formatted(value, targetType));
+        }
+    }
+
+    public static class SandboxDirValidator implements CurrentDirectoryValidator {
+        private final Path sandboxPath;
+
+        public SandboxDirValidator(Path sandboxPath) {
+            this.sandboxPath = sandboxPath.toAbsolutePath().normalize();
+        }
+
+        @Override
+        public void validate(Path curDir) {
+            if (!curDir.toAbsolutePath().normalize().startsWith(sandboxPath)) {
+                throw new SpelShellException("Cannot work outside of " + sandboxPath);
+            }
         }
     }
 

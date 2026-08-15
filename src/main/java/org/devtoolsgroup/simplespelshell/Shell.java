@@ -24,6 +24,9 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.springframework.expression.TypeConverter;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -63,6 +66,22 @@ public interface Shell {
 
     void var();
 
+    void cd(Path path);
+
+    void cd();
+
+    void pwd();
+
+    File getFile(Path path);
+
+    void write(Path path, String text) throws IOException;
+
+    String read(Path path) throws IOException;
+
+    void mkdir(Path path);
+
+    void ll() throws IOException;
+
     void setInput(InputStream input, Charset cs);
 
     void setInput(InputStream input);
@@ -77,4 +96,7 @@ public interface Shell {
 
     void setRootObject(Object rootObject);
 
+    void setTypeConverter(TypeConverter typeConverter);
+
+    void setCurrentDirectoryValidator(CurrentDirectoryValidator currentDirectoryValidator);
 }
