@@ -1,7 +1,7 @@
 /*
 MIT License
 
-Copyright (c) 2026 DevToolsGroup (https://github.com/DevToolsGroup)
+Copyright (c) 2026-present DevToolsGroup (https://github.com/DevToolsGroup)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,10 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-public class BaseSpelShell {
+public class Main {
+
     static void main(String[] args) {
+        new SpelShell().runScript(System.in, false);
     }
+
 }
