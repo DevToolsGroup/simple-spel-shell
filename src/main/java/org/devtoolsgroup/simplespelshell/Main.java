@@ -33,7 +33,7 @@ public class Main extends SpelShell {
         super(Path.of(""));
     }
 
-    static void main(String[] args) throws IOException {
+    static void main(String[] args) {
         Main shell = new Main();
 
         shell.setPrompt("");

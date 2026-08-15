@@ -52,6 +52,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,12 +76,13 @@ public class SpelShell implements Shell {
     private boolean printExpression;
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
+    private File commandHistoryFile;
     private List<Converter<?, ?>> typeConverters = new ArrayList<>();
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private final AtomicLong variablesHash = new AtomicLong(0);
     private Path curDir;
-    private CurrentDirectoryValidator currentDirectoryValidator;
+    private Consumer<Path> currentDirectoryValidator;
 
     public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
@@ -96,8 +98,13 @@ public class SpelShell implements Shell {
         });
         initSpelCtx();
 
-        cd(initialDir.toAbsolutePath().normalize());
-        setCurrentDirectoryValidator(new SandboxDirValidator(this.curDir));
+        Path absInitialDir = initialDir.toAbsolutePath().normalize();
+        cd(absInitialDir);
+        setCurrentDirectoryValidator(path -> {
+            if (!path.toAbsolutePath().normalize().startsWith(absInitialDir)) {
+                throw new SpelShellException("Cannot work outside of " + absInitialDir);
+            }
+        });
     }
 
     @Override
@@ -277,7 +284,7 @@ public class SpelShell implements Shell {
             throw new SpelShellException("%s is not a directory.".formatted(path));
         }
         if (currentDirectoryValidator != null) {
-            currentDirectoryValidator.validate(path);
+            currentDirectoryValidator.accept(path);
         }
         curDir = path;
         return curDir;
@@ -404,6 +411,11 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void setCommandHistoryFile(File commandHistoryFile) {
+        this.commandHistoryFile = commandHistoryFile;
+    }
+
+    @Override
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
         zeroArgMethods = getMethodsWithNumOfArgs(rootObject, 0);
@@ -417,10 +429,10 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setCurrentDirectoryValidator(CurrentDirectoryValidator currentDirectoryValidator) {
+    public void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator) {
         this.currentDirectoryValidator = currentDirectoryValidator;
         if (currentDirectoryValidator != null) {
-            currentDirectoryValidator.validate(curDir);
+            currentDirectoryValidator.accept(curDir);
         }
     }
 
@@ -527,21 +539,6 @@ public class SpelShell implements Shell {
 
         public SpelShellException(String message, Throwable cause) {
             super(message, cause);
-        }
-    }
-
-    public static class SandboxDirValidator implements CurrentDirectoryValidator {
-        private final Path sandboxPath;
-
-        public SandboxDirValidator(Path sandboxPath) {
-            this.sandboxPath = sandboxPath.toAbsolutePath().normalize();
-        }
-
-        @Override
-        public void validate(Path curDir) {
-            if (!curDir.toAbsolutePath().normalize().startsWith(sandboxPath)) {
-                throw new SpelShellException("Cannot work outside of " + sandboxPath);
-            }
         }
     }
 

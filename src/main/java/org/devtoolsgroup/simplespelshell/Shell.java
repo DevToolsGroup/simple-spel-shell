@@ -32,6 +32,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public interface Shell {
@@ -102,9 +103,11 @@ public interface Shell {
 
     void setPrintEvalResultLength(int printEvalResultLength);
 
+    void setCommandHistoryFile(File commandHistoryFile);
+
     void setRootObject(Object rootObject);
 
     void addTypeConverter(Converter<?, ?> typeConverter);
 
-    void setCurrentDirectoryValidator(CurrentDirectoryValidator currentDirectoryValidator);
+    void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator);
 }
