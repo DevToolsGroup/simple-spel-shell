@@ -24,10 +24,16 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-public class Main {
+import java.io.IOException;
+
+public class Main extends SpelShell {
 
     static void main(String[] args) {
-        new SpelShell().runScript(System.in, false);
+        new Main().runScript(System.in, false);
     }
 
+    public void sayHi() throws IOException {
+        String name = prompt("What is your name? ");
+        print(format("Hi, %s!\n", name));
+    }
 }

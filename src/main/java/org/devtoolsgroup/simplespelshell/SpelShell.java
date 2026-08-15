@@ -58,7 +58,7 @@ public class SpelShell {
     private final List<String> oneArgMethods;
     private StandardEvaluationContext spelCtx;
     private Object lastEvalResult;
-    private InputStream input = System.in;
+    private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
     private String prompt = ">>> ";
     private boolean printEvalResult = true;
@@ -135,6 +135,19 @@ public class SpelShell {
         return String.format(format, args);
     }
 
+    public String prompt(String prompt) throws IOException {
+        print(prompt);
+        return input.readLine();
+    }
+
+    public void exit(int code) {
+        System.exit(code);
+    }
+
+    public void exit() {
+        System.exit(0);
+    }
+
     private Object eval(String expr) {
         lastEvalResult = parser.parseExpression(expr).getValue(spelCtx, globalFunctions, Object.class);
         setLastEvalResult(lastEvalResult);
@@ -177,7 +190,7 @@ public class SpelShell {
     private String findByPattern(String patStr, List<String> options) {
         Pattern pattern = makePattern(patStr);
         List<String> found = options.stream()
-            .filter(option -> pattern.matcher(option).matches())
+            .filter(option -> pattern.matcher(option.toLowerCase()).matches())
             .toList();
         if (found.isEmpty()) {
             throw new SpelShellException("Cannot find a method by pattern '%s'".formatted(patStr));
@@ -197,7 +210,6 @@ public class SpelShell {
             .map(Method::getName)
             .filter(this::isMethodToShow)
             .distinct()
-            .map(String::toLowerCase)
             .toList();
     }
 
@@ -215,8 +227,12 @@ public class SpelShell {
         return Pattern.compile(".*" + String.join(".*", pat.toLowerCase().split("")) + ".*");
     }
 
+    public void setInput(InputStream input, Charset cs) {
+        this.input = new BufferedReader(new InputStreamReader(System.in, cs));
+    }
+
     public void setInput(InputStream input) {
-        this.input = input;
+        setInput(input, StandardCharsets.UTF_8);
     }
 
     public void setOutput(PrintStream output) {
