@@ -54,22 +54,21 @@ public class SpelShell {
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final Set<String> methodsToHide;
-    private final List<String> zeroArgMethods;
-    private final List<String> oneArgMethods;
+    private List<String> zeroArgMethods;
+    private List<String> oneArgMethods;
     private StandardEvaluationContext spelCtx;
     private Object lastEvalResult;
     private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
     private String prompt = ">>> ";
     private boolean printEvalResult = true;
-    private Object globalFunctions = this;
+    private Object rootObject;
 
     public SpelShell() {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
             "setInput", "setOutput", "setGlobalFunctions"));
-        zeroArgMethods = getMethodsWithNumOfArgs(0);
-        oneArgMethods = getMethodsWithNumOfArgs(1);
+        setRootObject(this);
         initSpelCtx();
     }
 
@@ -150,7 +149,7 @@ public class SpelShell {
     }
 
     public void help() {
-        Arrays.stream(globalFunctions.getClass().getMethods())
+        Arrays.stream(rootObject.getClass().getMethods())
             .map(Method::getName)
             .filter(this::isMethodToShow)
             .distinct()
@@ -159,7 +158,7 @@ public class SpelShell {
     }
 
     private Object eval(String expr) {
-        lastEvalResult = parser.parseExpression(expr).getValue(spelCtx, globalFunctions, Object.class);
+        lastEvalResult = parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class);
         setLastEvalResult(lastEvalResult);
         return lastEvalResult;
     }
@@ -214,8 +213,8 @@ public class SpelShell {
         return found.getFirst();
     }
 
-    private List<String> getMethodsWithNumOfArgs(int numOfArgs) {
-        return Arrays.stream(globalFunctions.getClass().getMethods())
+    private List<String> getMethodsWithNumOfArgs(Object rootObject, int numOfArgs) {
+        return Arrays.stream(rootObject.getClass().getMethods())
             .filter(m -> m.getGenericParameterTypes().length == numOfArgs)
             .map(Method::getName)
             .filter(this::isMethodToShow)
@@ -257,8 +256,10 @@ public class SpelShell {
         this.printEvalResult = printEvalResult;
     }
 
-    public void setGlobalFunctions(Object globalFunctions) {
-        this.globalFunctions = globalFunctions;
+    public void setRootObject(Object rootObject) {
+        this.rootObject = rootObject;
+        zeroArgMethods = getMethodsWithNumOfArgs(rootObject, 0);
+        oneArgMethods = getMethodsWithNumOfArgs(rootObject, 1);
     }
 
     private boolean isMethodToShow(String name) {
