@@ -54,6 +54,7 @@ public class SpelShell {
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final Set<String> methodsToHide;
+    private List<String> allMethods;
     private List<String> zeroArgMethods;
     private List<String> oneArgMethods;
     private StandardEvaluationContext spelCtx;
@@ -149,12 +150,7 @@ public class SpelShell {
     }
 
     public void help() {
-        Arrays.stream(rootObject.getClass().getMethods())
-            .map(Method::getName)
-            .filter(this::isMethodToShow)
-            .distinct()
-            .sorted()
-            .forEach(System.out::println);
+        allMethods.forEach(this::println);
     }
 
     private Object eval(String expr) {
@@ -237,7 +233,7 @@ public class SpelShell {
     }
 
     public void setInput(InputStream input, Charset cs) {
-        this.input = new BufferedReader(new InputStreamReader(System.in, cs));
+        this.input = new BufferedReader(new InputStreamReader(input, cs));
     }
 
     public void setInput(InputStream input) {
@@ -258,6 +254,12 @@ public class SpelShell {
 
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
+        allMethods = Arrays.stream(rootObject.getClass().getMethods())
+            .map(Method::getName)
+            .filter(this::isMethodToShow)
+            .distinct()
+            .sorted()
+            .toList();
         zeroArgMethods = getMethodsWithNumOfArgs(rootObject, 0);
         oneArgMethods = getMethodsWithNumOfArgs(rootObject, 1);
     }
