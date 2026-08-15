@@ -55,6 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class SpelShell implements Shell {
 
@@ -84,7 +85,7 @@ public class SpelShell implements Shell {
     public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
-            "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "setTypeConverter",
+            "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "addTypeConverter",
             "setRootObject"));
         setRootObject(this);
         typeConverters.add(new Converter<String, Path>() {
@@ -327,7 +328,7 @@ public class SpelShell implements Shell {
             String name = child.getFileName().toString();
 
             if (Files.isDirectory(child)) {
-                System.out.printf("%" + width + "s %s%n", "", name);
+                System.out.printf("%" + width + "s %s/%n", "", name);
             } else {
                 long size = Files.size(child);
                 System.out.printf("%" + width + "d %s%n", size, name);
@@ -369,8 +370,15 @@ public class SpelShell implements Shell {
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
         allMethods = Arrays.stream(rootObject.getClass().getMethods())
-            .map(Method::getName)
-            .filter(this::isMethodToShow)
+            .filter(method -> isMethodToShow(method.getName()))
+            .map(method -> {
+                String params = Arrays.stream(method.getParameterTypes())
+                    .map(Class::getName)
+                    .collect(Collectors.joining(", "));
+                String returnType = method.getReturnType().getName();
+                String name = method.getName();
+                return "%s(%s): %s".formatted(name, params, returnType);
+            })
             .distinct()
             .sorted()
             .toList();
