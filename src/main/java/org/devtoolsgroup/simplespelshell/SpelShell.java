@@ -94,10 +94,11 @@ public class SpelShell {
                         throw new SpelShellException(
                             "An error occurred while evaluating expression\nExpression: %s\nError: %s".formatted(
                                 rewrittenExpr != null ? rewrittenExpr : expr, ex.getMessage()
-                            )
+                            ),
+                            ex
                         );
                     }
-                    throw new SpelShellException(ex);
+                    throw new SpelShellException(ex.getMessage(), ex);
                 }
             }
         }
@@ -262,6 +263,16 @@ public class SpelShell {
 
     private boolean isMethodToShow(String name) {
         return !methodsToHide.contains(name);
+    }
+
+    public static class SpelShellException extends RuntimeException {
+        public SpelShellException(String message) {
+            super(message);
+        }
+
+        public SpelShellException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
 }
