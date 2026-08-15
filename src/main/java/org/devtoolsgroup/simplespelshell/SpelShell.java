@@ -148,6 +148,15 @@ public class SpelShell {
         System.exit(0);
     }
 
+    public void help() {
+        Arrays.stream(globalFunctions.getClass().getMethods())
+            .map(Method::getName)
+            .filter(this::isMethodToShow)
+            .distinct()
+            .sorted()
+            .forEach(System.out::println);
+    }
+
     private Object eval(String expr) {
         lastEvalResult = parser.parseExpression(expr).getValue(spelCtx, globalFunctions, Object.class);
         setLastEvalResult(lastEvalResult);
