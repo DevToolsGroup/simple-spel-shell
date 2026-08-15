@@ -253,6 +253,9 @@ public class SpelShell implements Shell {
 
     @Override
     public Path cd(Path path) {
+        if (path.toString().isEmpty()) {
+            return curDir;
+        }
         if (path.isAbsolute()) {
             path = path.normalize();
         } else {
