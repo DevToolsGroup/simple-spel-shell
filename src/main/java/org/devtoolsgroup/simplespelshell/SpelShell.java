@@ -81,6 +81,9 @@ public class SpelShell {
             try {
                 output.print(prompt);
                 expr = readExpr(reader);
+                if (expr == null) {
+                    return;
+                }
                 rewrittenExpr = rewriteExpr(expr);
                 Object res = eval(rewrittenExpr);
                 if (printEvalResult && res != null) {
@@ -164,7 +167,7 @@ public class SpelShell {
         while (true) {
             String line = reader.readLine();
             if (line == null) {
-                return sb.toString();
+                return sb.isEmpty() ? null : sb.toString();
             }
             Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
             if (matcher.matches() && matcher.group(2).length() % 2 == 1) {
