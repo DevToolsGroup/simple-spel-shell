@@ -24,8 +24,12 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
+import org.springframework.expression.EvaluationException;
+import org.springframework.expression.Operation;
+import org.springframework.expression.OperatorOverloader;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
@@ -81,6 +85,7 @@ public class SpelShell implements Shell {
     private int printEvalResultLength = 100;
     private File exprHistoryFile;
     private List<Converter<?, ?>> typeConverters = new ArrayList<>();
+    private OperatorOverloader operatorOverloader;
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private final AtomicLong variablesHash = new AtomicLong(0);
@@ -99,6 +104,7 @@ public class SpelShell implements Shell {
                 return Path.of(first);
             }
         });
+        operatorOverloader = new BasicOperatorOverloader();
         initSpelCtx();
 
         Path absInitialDir = initialDir.toAbsolutePath().normalize();
@@ -456,6 +462,12 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void setOperatorOverloader(OperatorOverloader operatorOverloader) {
+        this.operatorOverloader = operatorOverloader;
+        initSpelCtx();
+    }
+
+    @Override
     public void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator) {
         this.currentDirectoryValidator = currentDirectoryValidator;
         if (currentDirectoryValidator != null) {
@@ -537,6 +549,9 @@ public class SpelShell implements Shell {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
         typeConverters.forEach(defaultConversionService::addConverter);
         spelCtx.setTypeConverter(new StandardTypeConverter(defaultConversionService));
+        if (operatorOverloader != null) {
+            spelCtx.setOperatorOverloader(operatorOverloader);
+        }
 
         spelCtx.setVariables(variables);
         setLastEvalResult(lastEvalResult);
@@ -583,4 +598,33 @@ public class SpelShell implements Shell {
         }
     }
 
+    public static class BasicOperatorOverloader implements OperatorOverloader {
+
+        @Override
+        public boolean overridesOperation(
+            Operation operation, @Nullable Object leftOperand, @Nullable Object rightOperand
+        ) throws EvaluationException {
+            if (operation == Operation.DIVIDE) {
+                if (leftOperand != null && rightOperand != null) {
+                    return (leftOperand instanceof String || leftOperand instanceof Path)
+                        && (rightOperand instanceof String || rightOperand instanceof Path);
+                }
+            }
+            return false;
+        }
+
+        @Override
+        public Object operate(
+            Operation operation, @Nullable Object leftOperand, @Nullable Object rightOperand
+        ) throws EvaluationException {
+            if (operation == Operation.DIVIDE) {
+                if (leftOperand != null && rightOperand != null) {
+                    String leftString = leftOperand instanceof String s ? s : leftOperand.toString();
+                    String rightString = rightOperand instanceof String s ? s : rightOperand.toString();
+                    return Path.of(leftString + "/" + rightString).normalize();
+                }
+            }
+            throw new EvaluationException("Cannot operate: %s %s %s.".formatted(leftOperand, operation, rightOperand));
+        }
+    }
 }

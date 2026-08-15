@@ -25,6 +25,7 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.expression.OperatorOverloader;
 
 import java.io.File;
 import java.io.IOException;
@@ -114,6 +115,8 @@ public interface Shell {
     void setRootObject(Object rootObject);
 
     void addTypeConverter(Converter<?, ?> typeConverter);
+
+    void setOperatorOverloader(OperatorOverloader operatorOverloader);
 
     void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator);
 }
