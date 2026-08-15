@@ -25,8 +25,13 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.IOException;
+import java.nio.file.Path;
 
 public class Main extends SpelShell {
+
+    public Main() {
+        super(Path.of(""));
+    }
 
     static void main(String[] args) {
         new Main().runScript(System.in, false);

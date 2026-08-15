@@ -24,7 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import org.springframework.expression.TypeConverter;
+import org.springframework.core.convert.converter.Converter;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,9 +66,9 @@ public interface Shell {
 
     void var();
 
-    void cd(Path path);
+    Path cd(Path path);
 
-    void cd();
+    Path cd();
 
     void pwd();
 
@@ -96,7 +96,7 @@ public interface Shell {
 
     void setRootObject(Object rootObject);
 
-    void setTypeConverter(TypeConverter typeConverter);
+    void addTypeConverter(Converter<?, ?> typeConverter);
 
     void setCurrentDirectoryValidator(CurrentDirectoryValidator currentDirectoryValidator);
 }

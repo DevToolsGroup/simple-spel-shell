@@ -24,11 +24,11 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import org.jspecify.annotations.Nullable;
-import org.springframework.core.convert.TypeDescriptor;
-import org.springframework.expression.TypeConverter;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.StandardTypeConverter;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -74,23 +74,29 @@ public class SpelShell implements Shell {
     private PrintStream output = System.out;
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
-    private TypeConverter typeConverter;
+    private List<Converter<?, ?>> typeConverters = new ArrayList<>();
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private final AtomicLong variablesHash = new AtomicLong(0);
     private Path curDir;
     private CurrentDirectoryValidator currentDirectoryValidator;
 
-    public SpelShell() {
+    public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
             "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "setTypeConverter",
             "setRootObject"));
         setRootObject(this);
-        setTypeConverter(new BasicTypeConverter());
+        typeConverters.add(new Converter<String, Path>() {
+            @Override
+            public Path convert(String first) {
+                return Path.of(first);
+            }
+        });
         initSpelCtx();
-        cd(Path.of("").toAbsolutePath());
-        setCurrentDirectoryValidator(new SandboxDirValidator(curDir));
+
+        cd(initialDir.toAbsolutePath().normalize());
+        setCurrentDirectoryValidator(new SandboxDirValidator(this.curDir));
     }
 
     @Override
@@ -225,9 +231,9 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void cd(Path path) {
+    public Path cd(Path path) {
         if (path.isAbsolute()) {
-            path = path.toAbsolutePath().normalize();
+            path = path.normalize();
         } else {
             path = curDir.resolve(path).toAbsolutePath().normalize();
         }
@@ -241,11 +247,12 @@ public class SpelShell implements Shell {
             currentDirectoryValidator.validate(path);
         }
         curDir = path;
+        return curDir;
     }
 
     @Override
-    public void cd() {
-        cd(Path.of(".."));
+    public Path cd() {
+        return cd(Path.of(".."));
     }
 
     @Override
@@ -360,8 +367,9 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setTypeConverter(TypeConverter typeConverter) {
-        this.typeConverter = typeConverter;
+    public void addTypeConverter(Converter<?, ?> typeConverter) {
+        typeConverters.add(typeConverter);
+        initSpelCtx();
     }
 
     @Override
@@ -442,10 +450,12 @@ public class SpelShell implements Shell {
 
     private void initSpelCtx() {
         spelCtx = new StandardEvaluationContext();
-        if (typeConverter != null) {
-            spelCtx.setTypeConverter(typeConverter);
-        }
-        variables.forEach(spelCtx::setVariable);
+
+        DefaultConversionService defaultConversionService = new DefaultConversionService();
+        typeConverters.forEach(defaultConversionService::addConverter);
+        spelCtx.setTypeConverter(new StandardTypeConverter(defaultConversionService));
+
+        spelCtx.setVariables(variables);
         setLastEvalResult(lastEvalResult);
     }
 
@@ -473,48 +483,6 @@ public class SpelShell implements Shell {
 
         public SpelShellException(String message, Throwable cause) {
             super(message, cause);
-        }
-    }
-
-    public static class BasicTypeConverter implements TypeConverter {
-
-        public static final TypeDescriptor STRING_CLASS = TypeDescriptor.valueOf(String.class);
-        public static final TypeDescriptor PATH_CLASS = TypeDescriptor.valueOf(Path.class);
-
-        @Override
-        public boolean canConvert(@Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
-            if (sourceType == null) {
-                return true;
-            }
-
-            if (sourceType.isAssignableTo(STRING_CLASS)) {
-                return targetType.isAssignableTo(PATH_CLASS);
-            }
-            if (sourceType.isAssignableTo(PATH_CLASS)) {
-                return targetType.isAssignableTo(STRING_CLASS);
-            }
-            return false;
-        }
-
-        @Override
-        public @Nullable Object convertValue(@Nullable Object value, @Nullable TypeDescriptor sourceType, TypeDescriptor targetType) {
-            if (value == null) {
-                return null;
-            }
-            if (sourceType.equals(targetType)) {
-                return value;
-            }
-            if (sourceType.isAssignableTo(STRING_CLASS)) {
-                if (targetType.isAssignableTo(PATH_CLASS)) {
-                    return Path.of((String) value);
-                }
-            }
-            if (sourceType.isAssignableTo(PATH_CLASS)) {
-                if (targetType.isAssignableTo(STRING_CLASS)) {
-                    return ((Path) value).toString();
-                }
-            }
-            throw new SpelShellException("Cannot convert %s to %s.".formatted(value, targetType));
         }
     }
 
