@@ -65,6 +65,12 @@ public interface Shell {
 
     void help();
 
+    void hist(int num) throws IOException;
+
+    void hist() throws IOException;
+
+    void hist(String filter) throws IOException;
+
     Object var(String name, Object value);
 
     Object var(String name);
@@ -103,7 +109,7 @@ public interface Shell {
 
     void setPrintEvalResultLength(int printEvalResultLength);
 
-    void setCommandHistoryFile(File commandHistoryFile);
+    void setExprHistoryFile(File commandHistoryFile);
 
     void setRootObject(Object rootObject);
 

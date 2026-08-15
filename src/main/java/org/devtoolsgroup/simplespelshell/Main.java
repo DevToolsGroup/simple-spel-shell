@@ -24,13 +24,14 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 
 public class Main extends SpelShell {
 
     public Main() {
-        super(Path.of(""));
+        super(Path.of("target"));
     }
 
     static void main(String[] args) {
@@ -42,6 +43,7 @@ public class Main extends SpelShell {
 
         shell.setPrompt(">>> ");
         shell.setPrintEvalResultLength(100);
+        shell.setExprHistoryFile(new File("target/history.log"));
         shell.runScript(System.in, false);
     }
 

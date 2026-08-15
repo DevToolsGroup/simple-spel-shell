@@ -33,6 +33,7 @@ import org.springframework.expression.spel.support.StandardTypeConverter;
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,6 +44,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -76,7 +79,7 @@ public class SpelShell implements Shell {
     private boolean printExpression;
     private Supplier<String> prompt = () -> ">>> ";
     private int printEvalResultLength = 100;
-    private File commandHistoryFile;
+    private File exprHistoryFile;
     private List<Converter<?, ?>> typeConverters = new ArrayList<>();
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
@@ -102,7 +105,7 @@ public class SpelShell implements Shell {
         cd(absInitialDir);
         setCurrentDirectoryValidator(path -> {
             if (!path.toAbsolutePath().normalize().startsWith(absInitialDir)) {
-                throw new SpelShellException("Cannot work outside of " + absInitialDir);
+                exn("Cannot work outside of " + absInitialDir);
             }
         });
     }
@@ -126,6 +129,9 @@ public class SpelShell implements Shell {
                     println(expr);
                 }
                 Object res = eval(expr);
+                if (exprHistoryFile != null) {
+                    saveExprToHistFile(expr, exprHistoryFile);
+                }
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
                     String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
@@ -236,9 +242,30 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void hist(int num) throws IOException {
+        List<String> allHist = loadHistory(exprHistoryFile);
+        for (int i = Math.max(0, allHist.size() - num); i < allHist.size(); i++) {
+            println(allHist.get(i));
+        }
+    }
+
+    @Override
+    public void hist() throws IOException {
+        hist(200);
+    }
+
+    @Override
+    public void hist(String filter) throws IOException {
+        String finalFilter = filter.toLowerCase();
+        loadHistory(exprHistoryFile).stream()
+            .filter(line -> line.toLowerCase().contains(finalFilter))
+            .forEach(this::println);
+    }
+
+    @Override
     public Object var(String name, Object value) {
         if (name == null) {
-            throw new SpelShellException("Variable name must not be null.");
+            exn("Variable name must not be null.");
         }
         if (value == null) {
             variables.remove(name);
@@ -278,10 +305,10 @@ public class SpelShell implements Shell {
             path = curDir.resolve(path).toAbsolutePath().normalize();
         }
         if (!Files.exists(path)) {
-            throw new SpelShellException("The directory %s doesn't exist.".formatted(path));
+            exn("The directory %s doesn't exist.".formatted(path));
         }
         if (!Files.isDirectory(path)) {
-            throw new SpelShellException("%s is not a directory.".formatted(path));
+            exn("%s is not a directory.".formatted(path));
         }
         if (currentDirectoryValidator != null) {
             currentDirectoryValidator.accept(path);
@@ -302,18 +329,18 @@ public class SpelShell implements Shell {
 
     @Override
     public File getFile(Path path) {
-        return curDir.resolve(path).toFile();
+        return curDir.resolve(path).toAbsolutePath().normalize().toFile();
     }
 
     @Override
     public void write(Path path, String text) throws IOException {
         Path pathToWriteTo = curDir.resolve(path).toAbsolutePath().normalize();
         if (!isParentChild(curDir, pathToWriteTo)) {
-            throw new SpelShellException("Cannot write outside of the current directory " + curDir);
+            exn("Cannot write outside of the current directory " + curDir);
         }
         Path parentPath = pathToWriteTo.getParent();
         if (!Files.exists(parentPath) && !parentPath.toFile().mkdirs()) {
-            throw new SpelShellException("There was an error when creating parent directories " + parentPath);
+            exn("There was an error when creating parent directories " + parentPath);
         }
         Files.writeString(pathToWriteTo, text, StandardCharsets.UTF_8);
     }
@@ -326,7 +353,7 @@ public class SpelShell implements Shell {
     @Override
     public void mkdir(boolean autoCd, Path path) {
         if (!getFile(path).mkdirs()) {
-            throw new SpelShellException("There was an error when creating one of the specified directories");
+            exn("There was an error when creating one of the specified directories");
         }
         if (autoCd) {
             cd(path);
@@ -411,8 +438,8 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setCommandHistoryFile(File commandHistoryFile) {
-        this.commandHistoryFile = commandHistoryFile;
+    public void setExprHistoryFile(File exprHistoryFile) {
+        this.exprHistoryFile = exprHistoryFile;
     }
 
     @Override
@@ -530,6 +557,20 @@ public class SpelShell implements Shell {
 
     private static boolean isParentChild(Path parent, Path child) {
         return child.toAbsolutePath().normalize().startsWith(parent.toAbsolutePath().normalize());
+    }
+
+    private static void saveExprToHistFile(String expr, File histFile) throws IOException {
+        try (FileWriter wr = new FileWriter(histFile, StandardCharsets.UTF_8, true)) {
+            wr.append("\n").append(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
+                .append("\n").append(expr);
+        }
+    }
+
+    private static List<String> loadHistory(File exprHistoryFile) throws IOException {
+        if (exprHistoryFile == null) {
+            throw new SpelShellException("exprHistoryFile is not set.");
+        }
+        return Files.readAllLines(exprHistoryFile.toPath(), StandardCharsets.UTF_8);
     }
 
     public static class SpelShellException extends RuntimeException {
