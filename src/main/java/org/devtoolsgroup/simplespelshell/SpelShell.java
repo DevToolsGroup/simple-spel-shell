@@ -45,7 +45,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class SpelShell {
+public class SpelShell implements Shell {
 
     private static final Pattern SET_VAR_PAT = Pattern.compile("^\\s*([a-zA-Z$_][a-zA-Z$_0-9]*)\\s*=(.+)$");
     private static final Pattern ZERO_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*$");
@@ -73,6 +73,7 @@ public class SpelShell {
         initSpelCtx();
     }
 
+    @Override
     public void runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
         while (true) {
@@ -111,10 +112,12 @@ public class SpelShell {
         }
     }
 
+    @Override
     public void runScript(InputStream scriptInp, boolean stopOnException) {
         runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
     }
 
+    @Override
     public void runScript(String script, boolean stopOnException) {
         runScript(
             new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
@@ -123,39 +126,48 @@ public class SpelShell {
         );
     }
 
+    @Override
     public void runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
         runScript(Files.readString(path, cs), stopOnException);
     }
 
+    @Override
     public void runScript(Path path, boolean stopOnException) throws IOException {
         runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
     }
 
+    @Override
     public void print(Object obj) {
         output.print(obj.toString());
     }
 
+    @Override
     public void println(Object obj) {
         output.println(obj.toString());
     }
 
+    @Override
     public String format(String format, Object... args) {
         return String.format(format, args);
     }
 
+    @Override
     public String prompt(String prompt) throws IOException {
         print(prompt);
         return input.readLine();
     }
 
+    @Override
     public void exit(int code) {
         System.exit(code);
     }
 
+    @Override
     public void exit() {
         System.exit(0);
     }
 
+    @Override
     public void help() {
         allMethods.forEach(this::println);
     }
@@ -239,26 +251,32 @@ public class SpelShell {
         return Pattern.compile(".*" + String.join(".*", pat.toLowerCase().split("")) + ".*");
     }
 
+    @Override
     public void setInput(InputStream input, Charset cs) {
         this.input = new BufferedReader(new InputStreamReader(input, cs));
     }
 
+    @Override
     public void setInput(InputStream input) {
         setInput(input, StandardCharsets.UTF_8);
     }
 
+    @Override
     public void setOutput(PrintStream output) {
         this.output = output;
     }
 
+    @Override
     public void setPrompt(String prompt) {
         this.prompt = prompt;
     }
 
+    @Override
     public void setPrintEvalResultLength(int printEvalResultLength) {
         this.printEvalResultLength = printEvalResultLength;
     }
 
+    @Override
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
         allMethods = Arrays.stream(rootObject.getClass().getMethods())
