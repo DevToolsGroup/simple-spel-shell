@@ -84,6 +84,9 @@ public class SpelShell {
                 if (expr == null) {
                     return;
                 }
+                if (expr.isBlank()) {
+                    continue;
+                }
                 rewrittenExpr = rewriteExpr(expr);
                 Object res = eval(rewrittenExpr);
                 if (printEvalResultLength > 0 && res != null) {
