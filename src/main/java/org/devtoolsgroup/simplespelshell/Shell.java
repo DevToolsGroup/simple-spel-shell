@@ -58,6 +58,8 @@ public interface Shell {
 
     void exit();
 
+    void exn(String msg);
+
     void help(String filter);
 
     void help();

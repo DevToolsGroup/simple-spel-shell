@@ -194,6 +194,11 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public void exn(String msg) {
+        throw new SpelShellException(msg);
+    }
+
+    @Override
     public void help(String filter) {
         Pattern pattern = makePattern(filter);
         Arrays.stream(rootObject.getClass().getMethods())
