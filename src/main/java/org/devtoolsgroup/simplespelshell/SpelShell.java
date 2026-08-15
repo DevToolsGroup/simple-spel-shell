@@ -267,9 +267,13 @@ public class SpelShell implements Shell {
 
     @Override
     public void write(Path path, String text) throws IOException {
-        Path pathToWriteTo = curDir.resolve(path);
+        Path pathToWriteTo = curDir.resolve(path).toAbsolutePath().normalize();
         if (!isParentChild(curDir, pathToWriteTo)) {
             throw new SpelShellException("Cannot write outside of the current directory " + curDir);
+        }
+        Path parentPath = pathToWriteTo.getParent();
+        if (!Files.exists(parentPath) && !parentPath.toFile().mkdirs()) {
+            throw new SpelShellException("There was an error when creating parent directories " + parentPath);
         }
         Files.writeString(pathToWriteTo, text, StandardCharsets.UTF_8);
     }
