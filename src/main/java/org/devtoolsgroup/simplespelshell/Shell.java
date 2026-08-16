@@ -123,5 +123,5 @@ public interface Shell {
 
     void setOperatorOverloader(OperatorOverloader operatorOverloader);
 
-    void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator);
+    void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> currentDirectoryValidator);
 }

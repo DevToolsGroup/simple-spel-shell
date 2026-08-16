@@ -110,8 +110,7 @@ public class SpelShell implements Shell {
         initSpelCtx();
 
         Path absInitialDir = initialDir.toAbsolutePath().normalize();
-        cd(absInitialDir);
-        setCurrentDirectoryValidator(path -> {
+        setCurrentDirectoryValidator(absInitialDir, path -> {
             if (!path.toAbsolutePath().normalize().startsWith(absInitialDir)) {
                 throw new SpelShellException(false, "Cannot work outside of " + absInitialDir);
             }
@@ -488,7 +487,9 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setCurrentDirectoryValidator(Consumer<Path> currentDirectoryValidator) {
+    public void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> currentDirectoryValidator) {
+        this.currentDirectoryValidator = null;
+        cd(newCurDir);
         this.currentDirectoryValidator = currentDirectoryValidator;
         if (currentDirectoryValidator != null) {
             currentDirectoryValidator.accept(curDir);
