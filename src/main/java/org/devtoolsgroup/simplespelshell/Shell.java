@@ -39,15 +39,19 @@ import java.util.function.Supplier;
 
 public interface Shell {
 
-    void runScript(InputStream scriptInp, Charset cs, boolean stopOnException);
+    Object runScript(InputStream scriptInp, Charset cs, boolean stopOnException);
 
-    void runScript(InputStream scriptInp, boolean stopOnException);
+    Object runScript(InputStream scriptInp, boolean stopOnException);
 
-    void runScript(String script, boolean stopOnException);
+    Object runScript(String script, boolean stopOnException);
 
-    void runScript(Path path, Charset cs, boolean stopOnException) throws IOException;
+    Object runScript(Path path, Charset cs, boolean stopOnException) throws IOException;
 
-    void runScript(Path path, boolean stopOnException) throws IOException;
+    Object runScript(Path path, boolean stopOnException) throws IOException;
+
+    Object eval(Object newVar, String script);
+
+    Object eval(String script);
 
     void print(Object obj);
 

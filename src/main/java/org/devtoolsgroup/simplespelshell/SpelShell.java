@@ -116,7 +116,7 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
+    public Object runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
         Consumer<String> saveToHist =
             exprHistoryFile == null
@@ -132,7 +132,7 @@ public class SpelShell implements Shell {
                     expr = expressionInterceptor.apply(expr, saveToHist);
                 }
                 if (expr == null) {
-                    return;
+                    return lastEvalResult;
                 }
                 if (expr.isBlank()) {
                     continue;
@@ -141,7 +141,7 @@ public class SpelShell implements Shell {
                 if (printExpression) {
                     println(expr);
                 }
-                Object res = eval(expr);
+                Object res = evalPriv(expr);
                 saveToHist.accept(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
@@ -169,13 +169,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void runScript(InputStream scriptInp, boolean stopOnException) {
-        runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
+    public Object runScript(InputStream scriptInp, boolean stopOnException) {
+        return runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
     }
 
     @Override
-    public void runScript(String script, boolean stopOnException) {
-        runScript(
+    public Object runScript(String script, boolean stopOnException) {
+        return runScript(
             new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
             StandardCharsets.UTF_8,
             stopOnException
@@ -183,13 +183,31 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
-        runScript(Files.readString(path, cs), stopOnException);
+    public Object runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
+        return runScript(Files.readString(path, cs), stopOnException);
     }
 
     @Override
-    public void runScript(Path path, boolean stopOnException) throws IOException {
-        runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
+    public Object runScript(Path path, boolean stopOnException) throws IOException {
+        return runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
+    }
+
+    @Override
+    public Object eval(Object newVar, String script) {
+        Supplier<String> promptBefore = this.prompt;
+        int lengthBefore = this.printEvalResultLength;
+        setPrompt("");
+        setPrintEvalResultLength(0);
+        var("$", newVar);
+        Object res = runScript(script, true);
+        setPrompt(promptBefore);
+        setPrintEvalResultLength(lengthBefore);
+        return res;
+    }
+
+    @Override
+    public Object eval(String script) {
+        return eval(null, script);
     }
 
     @Override
@@ -494,7 +512,7 @@ public class SpelShell implements Shell {
         }
     }
 
-    private Object eval(String expr) {
+    private Object evalPriv(String expr) {
         return setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
     }
 
