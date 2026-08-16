@@ -26,24 +26,26 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Main extends SpelShell {
 
-    public Main() {
-        super(Path.of("target"));
+    public Main(String initDir) {
+        super(Path.of(initDir));
     }
 
     static void main(String[] args) {
-        Main shell = new Main();
+        String initDir = Files.exists(Path.of("target")) ? "target/" : "./";
+        Main shell = new Main(initDir);
 
         shell.setPrompt("");
         shell.setPrintEvalResultLength(0);
         shell.runScript("pi=T(java.lang.Math).PI\ne=T(java.lang.Math).E", true);
 
-        shell.setPrompt(">>> ");
+        shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);
-        shell.setExprHistoryFile(new File("target/history.log"));
+        shell.setExprHistoryFile(new File(initDir + "history.log"));
         shell.runScript(System.in, false);
     }
 

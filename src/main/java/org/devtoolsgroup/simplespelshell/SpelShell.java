@@ -81,7 +81,7 @@ public class SpelShell implements Shell {
     private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
     private PrintStream output = System.out;
     private boolean printExpression;
-    private Supplier<String> prompt = () -> ">>> ";
+    private Supplier<String> prompt = () -> "SpEL> ";
     private BiFunction<String, Consumer<String>, String> expressionInterceptor;
     private int printEvalResultLength = 100;
     private File exprHistoryFile;
