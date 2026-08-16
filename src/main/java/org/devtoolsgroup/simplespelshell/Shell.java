@@ -49,6 +49,8 @@ public interface Shell {
 
     Object runScript(Path path, boolean stopOnException) throws IOException;
 
+    Object runShell(boolean stopOnException);
+
     Object eval(Object newVar, String script);
 
     Object eval(String script);
@@ -61,7 +63,7 @@ public interface Shell {
 
     String prompt(String prompt) throws IOException;
 
-    void exit(int code);
+    void exit(String msg);
 
     void exit();
 
@@ -128,4 +130,6 @@ public interface Shell {
     void setOperatorOverloader(OperatorOverloader operatorOverloader);
 
     void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> currentDirectoryValidator);
+
+    void setOnExit(Consumer<String> onExit);
 }

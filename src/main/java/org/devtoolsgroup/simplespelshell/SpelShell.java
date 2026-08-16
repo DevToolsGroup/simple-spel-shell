@@ -72,7 +72,8 @@ public class SpelShell implements Shell {
     private static final Pattern ZERO_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*$");
     private static final Pattern ONE_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s+(\\S.*)$");
     private static final Pattern TRAILING_SLASHES_PAT = Pattern.compile("^(.*)(\\\\+)\\s*$");
-    private static final Pattern NAME_SPLIT_PAT = Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-");
+    private static final Pattern NAME_SPLIT_PAT =
+        Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])");
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final Set<String> methodsToHide;
@@ -93,6 +94,7 @@ public class SpelShell implements Shell {
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private Path curDir;
     private Consumer<Path> currentDirectoryValidator;
+    private Consumer<String> onExit = _ -> System.exit(1);
 
     public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
@@ -150,8 +152,12 @@ public class SpelShell implements Shell {
                     String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
                     println(resStr.substring(0, Math.min(resStr.length(), printEvalResultLength)) + ellipsis);
                 }
+            } catch (SpelShellExitException ex) {
+                throw ex;
             } catch (Exception ex) {
-                println(ex.getMessage());
+                if (ex.getMessage() != null) {
+                    println(ex.getMessage());
+                }
                 if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
                     ex.printStackTrace(output);
                 }
@@ -195,6 +201,11 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public Object runShell(boolean stopOnException) {
+        return runScript(System.in, stopOnException);
+    }
+
+    @Override
     public Object eval(Object newVar, String script) {
         Supplier<String> promptBefore = this.prompt;
         int lengthBefore = this.printEvalResultLength;
@@ -219,7 +230,7 @@ public class SpelShell implements Shell {
 
     @Override
     public void println(Object obj) {
-        output.println(obj.toString());
+        output.println(obj);
     }
 
     @Override
@@ -234,13 +245,15 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void exit(int code) {
-        System.exit(code);
+    public void exit(String msg) {
+        if (onExit != null) {
+            onExit.accept(msg);
+        }
     }
 
     @Override
     public void exit() {
-        System.exit(0);
+        exit("");
     }
 
     @Override
@@ -514,6 +527,11 @@ public class SpelShell implements Shell {
         }
     }
 
+    @Override
+    public void setOnExit(Consumer<String> onExit) {
+        this.onExit = onExit;
+    }
+
     private Object evalPriv(String expr) {
         return setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
     }
@@ -668,6 +686,15 @@ public class SpelShell implements Shell {
 
         public boolean isPrintStackTrace() {
             return printStackTrace;
+        }
+    }
+
+    public static class SpelShellExitException extends RuntimeException {
+        public SpelShellExitException() {
+        }
+
+        public SpelShellExitException(String message) {
+            super(message);
         }
     }
 

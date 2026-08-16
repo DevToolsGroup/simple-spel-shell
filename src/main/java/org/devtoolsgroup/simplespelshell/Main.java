@@ -46,7 +46,7 @@ public class Main extends SpelShell {
         shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);
         shell.setExprHistoryFile(new File(initDir + "history.log"));
-        shell.runScript(System.in, false);
+        shell.runShell(false);
     }
 
     public void sayHi() throws IOException {
