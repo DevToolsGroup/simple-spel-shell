@@ -113,7 +113,7 @@ public class SpelShell implements Shell {
         cd(absInitialDir);
         setCurrentDirectoryValidator(path -> {
             if (!path.toAbsolutePath().normalize().startsWith(absInitialDir)) {
-                exn("Cannot work outside of " + absInitialDir);
+                throw new SpelShellException(false, "Cannot work outside of " + absInitialDir);
             }
         });
     }
@@ -153,7 +153,9 @@ public class SpelShell implements Shell {
                 }
             } catch (Exception ex) {
                 println(ex.getMessage());
-                ex.printStackTrace(output);
+                if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
+                    ex.printStackTrace(output);
+                }
                 if (stopOnException) {
                     if (expr != null) {
                         throw new SpelShellException(
@@ -279,7 +281,7 @@ public class SpelShell implements Shell {
     @Override
     public Object var(String name, Object value) {
         if (name == null) {
-            exn("Variable name must not be null.");
+            throw new SpelShellException(false, "Variable name must not be null.");
         }
         if (value == null) {
             variables.remove(name);
@@ -319,10 +321,10 @@ public class SpelShell implements Shell {
             path = curDir.resolve(path).toAbsolutePath().normalize();
         }
         if (!Files.exists(path)) {
-            exn("The directory %s doesn't exist.".formatted(path));
+            throw new SpelShellException(false, "The directory %s doesn't exist.".formatted(path));
         }
         if (!Files.isDirectory(path)) {
-            exn("%s is not a directory.".formatted(path));
+            throw new SpelShellException(false, "%s is not a directory.".formatted(path));
         }
         if (currentDirectoryValidator != null) {
             currentDirectoryValidator.accept(path);
@@ -350,11 +352,11 @@ public class SpelShell implements Shell {
     public void write(Path path, String text) throws IOException {
         Path pathToWriteTo = curDir.resolve(path).toAbsolutePath().normalize();
         if (!isParentChild(curDir, pathToWriteTo)) {
-            exn("Cannot write outside of the current directory " + curDir);
+            throw new SpelShellException(false, "Cannot write outside of the current directory " + curDir);
         }
         Path parentPath = pathToWriteTo.getParent();
         if (!Files.exists(parentPath) && !parentPath.toFile().mkdirs()) {
-            exn("There was an error when creating parent directories " + parentPath);
+            throw new SpelShellException(false, "There was an error when creating parent directories " + parentPath);
         }
         Files.writeString(pathToWriteTo, text, StandardCharsets.UTF_8);
     }
@@ -367,7 +369,7 @@ public class SpelShell implements Shell {
     @Override
     public void mkdir(boolean autoCd, Path path) {
         if (!getFile(path).mkdirs()) {
-            exn("There was an error when creating one of the specified directories");
+            throw new SpelShellException(false, "There was an error when creating one of the specified directories");
         }
         if (autoCd) {
             cd(path);
@@ -541,10 +543,10 @@ public class SpelShell implements Shell {
             .filter(option -> pattern.matcher(option.toLowerCase()).matches())
             .toList();
         if (found.isEmpty()) {
-            throw new SpelShellException("Cannot find a method by pattern '%s'".formatted(patStr));
+            throw new SpelShellException(false, "Cannot find a method by pattern '%s'".formatted(patStr));
         }
         if (found.size() > 1) {
-            throw new SpelShellException("Multiple methods match the pattern '%s':\n%s".formatted(
+            throw new SpelShellException(false, "Multiple methods match the pattern '%s':\n%s".formatted(
                 patStr,
                 String.join("\n", found)
             ));
@@ -603,18 +605,31 @@ public class SpelShell implements Shell {
 
     private static List<String> loadHistory(File exprHistoryFile) throws IOException {
         if (exprHistoryFile == null) {
-            throw new SpelShellException("exprHistoryFile is not set.");
+            throw new SpelShellException(false, "exprHistoryFile is not set.");
         }
         return Files.readAllLines(exprHistoryFile.toPath(), StandardCharsets.UTF_8);
     }
 
     public static class SpelShellException extends RuntimeException {
+        private final boolean printStackTrace;
+
         public SpelShellException(String message) {
             super(message);
+            printStackTrace = true;
         }
 
         public SpelShellException(String message, Throwable cause) {
             super(message, cause);
+            printStackTrace = true;
+        }
+
+        public SpelShellException(boolean printStackTrace, String message) {
+            super(message);
+            this.printStackTrace = printStackTrace;
+        }
+
+        public boolean isPrintStackTrace() {
+            return printStackTrace;
         }
     }
 
