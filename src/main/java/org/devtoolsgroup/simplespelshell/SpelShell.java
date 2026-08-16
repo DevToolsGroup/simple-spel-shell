@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -71,6 +72,7 @@ public class SpelShell implements Shell {
     private static final Pattern ZERO_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*$");
     private static final Pattern ONE_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s+(\\S.*)$");
     private static final Pattern TRAILING_SLASHES_PAT = Pattern.compile("^(.*)(\\\\+)\\s*$");
+    private static final Pattern NAME_SPLIT_PAT = Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-");
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private final Set<String> methodsToHide;
@@ -248,11 +250,11 @@ public class SpelShell implements Shell {
 
     @Override
     public void help(String filter) {
-        Pattern pattern = makePattern(filter);
         Arrays.stream(rootObject.getClass().getMethods())
             .filter(method -> {
                 String methodName = method.getName();
-                return isMethodToShow(methodName) && pattern.matcher(methodName.toLowerCase()).matches();
+                return !Modifier.isStatic(method.getModifiers()) && isMethodToShow(methodName)
+                    && matches(methodName, filter);
             })
             .map(method -> {
                 String params = Arrays.stream(method.getParameterTypes())
@@ -550,9 +552,8 @@ public class SpelShell implements Shell {
     }
 
     private static String findByPattern(String patStr, List<String> options) {
-        Pattern pattern = makePattern(patStr);
         List<String> found = options.stream()
-            .filter(option -> pattern.matcher(option.toLowerCase()).matches())
+            .filter(option -> matches(option, patStr))
             .toList();
         if (found.isEmpty()) {
             throw new SpelShellException(false, "Cannot find a method by pattern '%s'".formatted(patStr));
@@ -621,6 +622,30 @@ public class SpelShell implements Shell {
             throw new SpelShellException(false, "exprHistoryFile is not set.");
         }
         return Files.readAllLines(exprHistoryFile.toPath(), StandardCharsets.UTF_8);
+    }
+
+    public static boolean matches(String name, String pattern) {
+        String[] parts = NAME_SPLIT_PAT.split(name);
+        String nameL = name.toLowerCase();
+        String patternL = pattern.toLowerCase();
+        int partIdx = 0;
+        int partBeginIdx = 0;
+        int n = 0;
+        int p = 0;
+        int maxN = name.length() - 1;
+        int maxP = pattern.length() - 1;
+        while (n <= maxN && p <= maxP) {
+            if (nameL.charAt(n) == patternL.charAt(p)) {
+                p++;
+                n++;
+            } else {
+                while (partBeginIdx <= n && partIdx < parts.length) {
+                    partBeginIdx += parts[partIdx++].length();
+                }
+                n = partBeginIdx;
+            }
+        }
+        return p > maxP;
     }
 
     public static class SpelShellException extends RuntimeException {
