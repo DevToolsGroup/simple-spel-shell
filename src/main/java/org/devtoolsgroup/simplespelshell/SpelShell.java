@@ -381,9 +381,9 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void ll() throws IOException {
+    public void ll(Path path) throws IOException {
         List<Path> children;
-        try (DirectoryStream<Path> entries = Files.newDirectoryStream(curDir)) {
+        try (DirectoryStream<Path> entries = Files.newDirectoryStream(curDir.resolve(path))) {
             children = new ArrayList<>();
             for (Path entry : entries) {
                 children.add(entry);
@@ -414,6 +414,11 @@ public class SpelShell implements Shell {
                 System.out.printf("%" + width + "d %s%n", size, name);
             }
         }
+    }
+
+    @Override
+    public void ll() throws IOException {
+        ll(Path.of(""));
     }
 
     @Override

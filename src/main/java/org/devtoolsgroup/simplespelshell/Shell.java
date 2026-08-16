@@ -95,6 +95,8 @@ public interface Shell {
 
     void mkdir(Path path);
 
+    void ll(Path path) throws IOException;
+
     void ll() throws IOException;
 
     void setInput(InputStream input, Charset cs);
