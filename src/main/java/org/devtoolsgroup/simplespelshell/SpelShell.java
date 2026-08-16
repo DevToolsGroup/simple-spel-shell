@@ -58,7 +58,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -90,7 +89,6 @@ public class SpelShell implements Shell {
     private OperatorOverloader operatorOverloader;
     private Object rootObject;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
-    private final AtomicLong variablesHash = new AtomicLong(0);
     private Path curDir;
     private Consumer<Path> currentDirectoryValidator;
 
@@ -287,7 +285,7 @@ public class SpelShell implements Shell {
         } else {
             variables.put(name, value);
         }
-        variablesHash.incrementAndGet();
+        initSpelCtx();
         return value;
     }
 
@@ -497,12 +495,7 @@ public class SpelShell implements Shell {
     }
 
     private Object eval(String expr) {
-        long varHash = variablesHash.get();
-        setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
-        if (variablesHash.get() != varHash) {
-            initSpelCtx();
-        }
-        return lastEvalResult;
+        return setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
     }
 
     private static String readExpr(BufferedReader reader) throws IOException {
@@ -578,9 +571,10 @@ public class SpelShell implements Shell {
         setLastEvalResult(lastEvalResult);
     }
 
-    private void setLastEvalResult(Object res) {
+    private Object setLastEvalResult(Object res) {
         lastEvalResult = res;
         spelCtx.setVariable("_", res);
+        return res;
     }
 
     private static Pattern makePattern(String pat) {
