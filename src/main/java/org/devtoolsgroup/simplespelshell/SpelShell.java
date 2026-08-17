@@ -54,6 +54,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -65,43 +66,51 @@ import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class SpelShell implements Shell {
 
-    private static final Pattern SET_VAR_PAT = Pattern.compile("^\\s*([a-zA-Z$_][a-zA-Z$_0-9]*)\\s*=(.+)$");
-    private static final Pattern ZERO_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s*$");
-    private static final Pattern ONE_ARG_METHOD_PAT = Pattern.compile("^\\s*([a-zA-Z][a-zA-Z0-9]*)\\s+(\\S.*)$");
-    private static final Pattern TRAILING_SLASHES_PAT = Pattern.compile("^(.*)(\\\\+)\\s*$");
+    private static final String IDENTIFIER_PAT = "[a-zA-Z_$][a-zA-Z_$0-9]*";
+    private static final Pattern SET_VAR_PAT = pat("^\\s*(%s)\\s*=(.+)$".formatted(IDENTIFIER_PAT));
+    private static final Pattern ZERO_ARG_METHOD_PAT = pat("^\\s*(%s)\\s*$".formatted(IDENTIFIER_PAT));
+    private static final Pattern ONE_ARG_METHOD_PAT = pat("%s\\s+(.*)$".formatted(ZERO_ARG_METHOD_PAT.pattern()));
+    private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)(\\\\+)\\s*$");
     private static final Pattern NAME_SPLIT_PAT =
         Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])");
 
+    private Supplier<String> prompt = () -> "SpEL> ";
+    private BiFunction<String, Consumer<String>, String> expressionInterceptor;
+    private boolean printExpression;
+
     private final SpelExpressionParser parser = new SpelExpressionParser();
+    private StandardEvaluationContext spelCtx;
+    private List<Converter<?, ?>> typeConverters = new ArrayList<>();
+    private OperatorOverloader operatorOverloader;
+    private final Map<String, Object> variables = new ConcurrentHashMap<>();
+    private Object rootObject;
+
+    private Object lastEvalResult;
+    private int printEvalResultLength = 100;
+    private File exprHistoryFile;
+
+    private BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+    private PrintStream userOutput = System.out;
+    private Consumer<String> onExit = _ -> System.exit(1);
+    private Path curDir;
+    private Consumer<Path> currentDirectoryValidator;
+
     private final Set<String> methodsToHide;
     private List<String> zeroArgMethods;
     private List<String> oneArgMethods;
-    private StandardEvaluationContext spelCtx;
-    private Object lastEvalResult;
-    private BufferedReader input = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-    private PrintStream output = System.out;
-    private boolean printExpression;
-    private Supplier<String> prompt = () -> "SpEL> ";
-    private BiFunction<String, Consumer<String>, String> expressionInterceptor;
-    private int printEvalResultLength = 100;
-    private File exprHistoryFile;
-    private List<Converter<?, ?>> typeConverters = new ArrayList<>();
-    private OperatorOverloader operatorOverloader;
-    private Object rootObject;
-    private final Map<String, Object> variables = new ConcurrentHashMap<>();
-    private Path curDir;
-    private Consumer<Path> currentDirectoryValidator;
-    private Consumer<String> onExit = _ -> System.exit(1);
 
     public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
             "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "addTypeConverter",
             "setRootObject"));
-        setRootObject(this);
+
+        expressionInterceptor = (expr, _) -> SpelShell.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
+
         typeConverters.add(new Converter<String, Path>() {
             @Override
             public Path convert(String first) {
@@ -110,8 +119,10 @@ public class SpelShell implements Shell {
         });
         operatorOverloader = new BasicOperatorOverloader();
         initSpelCtx();
+        setRootObject(this);
 
         Path absInitialDir = initialDir.toAbsolutePath().normalize();
+        curDir = Path.of(".").toAbsolutePath().normalize();
         setCurrentDirectoryValidator(absInitialDir, path -> {
             if (!path.toAbsolutePath().normalize().startsWith(absInitialDir)) {
                 throw new SpelShellException(false, "Cannot work outside of " + absInitialDir);
@@ -120,15 +131,15 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public Object runScript(InputStream scriptInp, Charset cs, boolean stopOnException) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInp, cs));
-        Consumer<String> saveToHist =
-            exprHistoryFile == null
-                ? _ -> {
-            }
-                : str -> SpelShell.saveExprToHistFile(str, exprHistoryFile);
+    public Object runScript(InputStream scriptInput, Charset cs, boolean stopOnException) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInput, cs));
+        // @formatter:off
+        Consumer<String> saveToHist = exprHistoryFile != null
+            ? expr -> SpelShell.saveExprToHistFile(expr, exprHistoryFile)
+            : _ -> {};
+        // @formatter:on
         while (true) {
-            String expr = null;
+            String expr;
             try {
                 print(prompt.get());
                 expr = readExpr(reader);
@@ -141,36 +152,30 @@ public class SpelShell implements Shell {
                 if (expr.isBlank()) {
                     continue;
                 }
-                expr = rewriteExpr(expr.trim(), zeroArgMethods, oneArgMethods);
                 if (printExpression) {
                     println(expr);
                 }
-                Object res = evalPriv(expr);
+                Object res = evaluate(expr);
                 saveToHist.accept(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
-                    String ellipsis = resStr.length() > printEvalResultLength ? "..." : "";
-                    println(resStr.substring(0, Math.min(resStr.length(), printEvalResultLength)) + ellipsis);
+                    if (resStr.length() <= printEvalResultLength) {
+                        println(resStr);
+                    } else {
+                        println(resStr.substring(0, printEvalResultLength) + "...");
+                    }
                 }
             } catch (SpelShellExitException ex) {
                 throw ex;
             } catch (Exception ex) {
+                if (stopOnException) {
+                    throw new SpelShellException(ex.getMessage(), ex);
+                }
                 if (ex.getMessage() != null) {
                     println(ex.getMessage());
                 }
                 if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
-                    ex.printStackTrace(output);
-                }
-                if (stopOnException) {
-                    if (expr != null) {
-                        throw new SpelShellException(
-                            "An error occurred while evaluating expression\nExpression: %s\nError: %s".formatted(
-                                expr, ex.getMessage()
-                            ),
-                            ex
-                        );
-                    }
-                    throw new SpelShellException(ex.getMessage(), ex);
+                    ex.printStackTrace(userOutput);
                 }
             }
         }
@@ -201,8 +206,8 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public Object runShell(boolean stopOnException) {
-        return runScript(System.in, stopOnException);
+    public Object runShell() {
+        return runScript(System.in, false);
     }
 
     @Override
@@ -225,12 +230,17 @@ public class SpelShell implements Shell {
 
     @Override
     public void print(Object obj) {
-        output.print(obj.toString());
+        userOutput.print(obj.toString());
     }
 
     @Override
     public void println(Object obj) {
-        output.println(obj);
+        userOutput.println(obj);
+    }
+
+    @Override
+    public void printf(String format, Object... args) {
+        userOutput.printf(format, args);
     }
 
     @Override
@@ -241,7 +251,7 @@ public class SpelShell implements Shell {
     @Override
     public String prompt(String prompt) throws IOException {
         print(prompt);
-        return input.readLine();
+        return userInput.readLine();
     }
 
     @Override
@@ -258,24 +268,30 @@ public class SpelShell implements Shell {
 
     @Override
     public void exn(String msg) {
-        throw new SpelShellException(msg);
+        throw new SpelShellException(false, msg);
+    }
+
+    @Override
+    public void exnf(String format, Object... args) {
+        exn(format(format, args));
+    }
+
+    @Override
+    public void exnStackTrace(String msg) {
+        throw new SpelShellException(true, msg);
     }
 
     @Override
     public void help(String filter) {
-        Arrays.stream(rootObject.getClass().getMethods())
-            .filter(method -> {
-                String methodName = method.getName();
-                return !Modifier.isStatic(method.getModifiers()) && isMethodToShow(methodName)
-                    && matches(methodName, filter);
-            })
+        getExposedMethods()
+            .filter(method -> matches(method.getName(), filter))
             .map(method -> {
                 String params = Arrays.stream(method.getParameterTypes())
                     .map(Class::getName)
                     .collect(Collectors.joining(", "));
                 String returnType = method.getReturnType().getName();
                 String name = method.getName();
-                return "%s(%s): %s".formatted(name, params, returnType);
+                return format("%s(%s): %s", name, params, returnType);
             })
             .distinct()
             .sorted()
@@ -302,7 +318,7 @@ public class SpelShell implements Shell {
 
     @Override
     public void hist(String filter) throws IOException {
-        String finalFilter = filter.toLowerCase();
+        String finalFilter = filter.trim().toLowerCase();
         loadHistory(exprHistoryFile).stream()
             .filter(line -> line.toLowerCase().contains(finalFilter))
             .forEach(this::println);
@@ -311,7 +327,7 @@ public class SpelShell implements Shell {
     @Override
     public Object var(String name, Object value) {
         if (name == null) {
-            throw new SpelShellException(false, "Variable name must not be null.");
+            exn("Variable name must not be null.");
         }
         if (value == null) {
             variables.remove(name);
@@ -341,20 +357,21 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    public Map<String, Object> allVariables() {
+        return new HashMap<>(variables);
+    }
+
+    @Override
     public Path cd(Path path) {
-        if (path.toString().isEmpty()) {
+        if (path.toString().isBlank()) {
             return curDir;
         }
-        if (path.isAbsolute()) {
-            path = path.normalize();
-        } else {
-            path = curDir.resolve(path).toAbsolutePath().normalize();
-        }
+        path = curDir.resolve(path).toAbsolutePath().normalize();
         if (!Files.exists(path)) {
-            throw new SpelShellException(false, "The directory %s doesn't exist.".formatted(path));
+            exn("The directory %s doesn't exist.".formatted(path));
         }
         if (!Files.isDirectory(path)) {
-            throw new SpelShellException(false, "%s is not a directory.".formatted(path));
+            exn("%s is not a directory.".formatted(path));
         }
         if (currentDirectoryValidator != null) {
             currentDirectoryValidator.accept(path);
@@ -380,26 +397,29 @@ public class SpelShell implements Shell {
 
     @Override
     public void write(Path path, String text) throws IOException {
-        Path pathToWriteTo = curDir.resolve(path).toAbsolutePath().normalize();
-        if (!isParentChild(curDir, pathToWriteTo)) {
-            throw new SpelShellException(false, "Cannot write outside of the current directory " + curDir);
+        File fileToWriteTo = getFile(path);
+        if (!isParentChild(curDir, fileToWriteTo.toPath())) {
+            exnf("Cannot write outside of the current directory %s", curDir);
         }
-        Path parentPath = pathToWriteTo.getParent();
-        if (!Files.exists(parentPath) && !parentPath.toFile().mkdirs()) {
-            throw new SpelShellException(false, "There was an error when creating parent directories " + parentPath);
+        if (fileToWriteTo.exists() && fileToWriteTo.isDirectory()) {
+            exnf("Cannot write text to %s because it is a directory", fileToWriteTo);
         }
-        Files.writeString(pathToWriteTo, text, StandardCharsets.UTF_8);
+        File parentDir = fileToWriteTo.getParentFile();
+        if (!parentDir.exists() && !parentDir.mkdirs()) {
+            exnf("There was an error when creating parent directories %s", parentDir);
+        }
+        Files.writeString(fileToWriteTo.toPath(), text, StandardCharsets.UTF_8);
     }
 
     @Override
     public String read(Path path) throws IOException {
-        return Files.readString(curDir.resolve(path), StandardCharsets.UTF_8);
+        return Files.readString(getFile(path).toPath(), StandardCharsets.UTF_8);
     }
 
     @Override
     public void mkdir(boolean autoCd, Path path) {
         if (!getFile(path).mkdirs()) {
-            throw new SpelShellException(false, "There was an error when creating one of the specified directories");
+            exnf("There was an error when creating one of the specified directories %s", path);
         }
         if (autoCd) {
             cd(path);
@@ -437,13 +457,11 @@ public class SpelShell implements Shell {
         int width = String.valueOf(maxSize).length();
 
         for (Path child : children) {
-            String name = child.getFileName().toString();
-
             if (Files.isDirectory(child)) {
-                System.out.printf("%" + width + "s %s/%n", "", name);
+                printf("%" + width + "s %s/\n", "", child.getFileName());
             } else {
                 long size = Files.size(child);
-                System.out.printf("%" + width + "d %s%n", size, name);
+                printf("%" + width + "d %s\n", size, child.getFileName());
             }
         }
     }
@@ -454,18 +472,18 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setInput(InputStream input, Charset cs) {
-        this.input = new BufferedReader(new InputStreamReader(input, cs));
+    public void setUserInput(InputStream userInput, Charset cs) {
+        this.userInput = new BufferedReader(new InputStreamReader(userInput, cs));
     }
 
     @Override
-    public void setInput(InputStream input) {
-        setInput(input, StandardCharsets.UTF_8);
+    public void setUserInput(InputStream userInput) {
+        setUserInput(userInput, StandardCharsets.UTF_8);
     }
 
     @Override
-    public void setOutput(PrintStream output) {
-        this.output = output;
+    public void setUserOutput(PrintStream userOutput) {
+        this.userOutput = userOutput;
     }
 
     @Override
@@ -479,13 +497,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public void setExpressionInterceptor(BiFunction<String, Consumer<String>, String> expressionInterceptor) {
-        this.expressionInterceptor = expressionInterceptor;
+    public void setPrompt(String prompt) {
+        setPrompt(() -> prompt);
     }
 
     @Override
-    public void setPrompt(String prompt) {
-        setPrompt(() -> prompt);
+    public void setExpressionInterceptor(BiFunction<String, Consumer<String>, String> expressionInterceptor) {
+        this.expressionInterceptor = expressionInterceptor;
     }
 
     @Override
@@ -532,7 +550,7 @@ public class SpelShell implements Shell {
         this.onExit = onExit;
     }
 
-    private Object evalPriv(String expr) {
+    private Object evaluate(String expr) {
         return setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
     }
 
@@ -586,7 +604,7 @@ public class SpelShell implements Shell {
     }
 
     private List<String> getMethodsWithNumOfArgs(Object rootObject, int numOfArgs) {
-        return Arrays.stream(rootObject.getClass().getMethods())
+        return getExposedMethods()
             .filter(m -> m.getGenericParameterTypes().length == numOfArgs)
             .map(Method::getName)
             .filter(this::isMethodToShow)
@@ -614,10 +632,6 @@ public class SpelShell implements Shell {
         return res;
     }
 
-    private static Pattern makePattern(String pat) {
-        return Pattern.compile(".*" + String.join(".*", pat.toLowerCase().split("")) + ".*");
-    }
-
     private boolean isMethodToShow(String name) {
         return !methodsToHide.contains(name);
     }
@@ -643,9 +657,12 @@ public class SpelShell implements Shell {
     }
 
     public static boolean matches(String name, String pattern) {
+        String patternL = pattern.trim().toLowerCase();
+        if (patternL.isEmpty()) {
+            return true;
+        }
         String[] parts = NAME_SPLIT_PAT.split(name);
         String nameL = name.toLowerCase();
-        String patternL = pattern.toLowerCase();
         int partIdx = 0;
         int partBeginIdx = 0;
         int n = 0;
@@ -664,6 +681,15 @@ public class SpelShell implements Shell {
             }
         }
         return p > maxP;
+    }
+
+    private static Pattern pat(String regex) {
+        return Pattern.compile(regex, Pattern.DOTALL);
+    }
+
+    private Stream<Method> getExposedMethods() {
+        return Arrays.stream(rootObject.getClass().getMethods())
+            .filter(method -> !Modifier.isStatic(method.getModifiers()) && isMethodToShow(method.getName()));
     }
 
     public static class SpelShellException extends RuntimeException {
@@ -719,9 +745,7 @@ public class SpelShell implements Shell {
         ) throws EvaluationException {
             if (operation == Operation.DIVIDE) {
                 if (leftOperand != null && rightOperand != null) {
-                    String leftString = leftOperand instanceof String s ? s : leftOperand.toString();
-                    String rightString = rightOperand instanceof String s ? s : rightOperand.toString();
-                    return Path.of(leftString + "/" + rightString).normalize();
+                    return Path.of(leftOperand + "/" + rightOperand).normalize();
                 }
             }
             throw new EvaluationException("Cannot operate: %s %s %s.".formatted(leftOperand, operation, rightOperand));

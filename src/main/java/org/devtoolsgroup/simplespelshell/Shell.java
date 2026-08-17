@@ -33,6 +33,7 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -49,7 +50,7 @@ public interface Shell {
 
     Object runScript(Path path, boolean stopOnException) throws IOException;
 
-    Object runShell(boolean stopOnException);
+    Object runShell();
 
     Object eval(Object newVar, String script);
 
@@ -58,6 +59,8 @@ public interface Shell {
     void print(Object obj);
 
     void println(Object obj);
+
+    void printf(String format, Object... args);
 
     String format(String format, Object... args);
 
@@ -68,6 +71,10 @@ public interface Shell {
     void exit();
 
     void exn(String msg);
+
+    void exnf(String format, Object... args);
+
+    void exnStackTrace(String msg);
 
     void help(String filter);
 
@@ -84,6 +91,8 @@ public interface Shell {
     Object var(String name);
 
     void var();
+
+    Map<String, Object> allVariables();
 
     Path cd(Path path);
 
@@ -105,11 +114,11 @@ public interface Shell {
 
     void ll() throws IOException;
 
-    void setInput(InputStream input, Charset cs);
+    void setUserInput(InputStream input, Charset cs);
 
-    void setInput(InputStream input);
+    void setUserInput(InputStream userInput);
 
-    void setOutput(PrintStream output);
+    void setUserOutput(PrintStream userOutput);
 
     void setPrintExpression(boolean printExpression);
 

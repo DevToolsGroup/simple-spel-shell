@@ -24,11 +24,12 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.File;
 import java.nio.file.Path;
 
 public class Example1 {
     static void main() {
-        new MainShell(Path.of("target"));
+        new MainShell(Path.of(new File("target").exists() ? "target" : "."));
     }
 
     private static class MainShell extends SpelShell {
@@ -38,7 +39,11 @@ public class Example1 {
             super(initialDir);
             this.initialDir = initialDir;
             setPrompt("[main menu] SpEL> ");
-            runShell(false);
+            try {
+                runShell();
+            } catch (SpelShellExitException ex) {
+                //ignore the child shell exit signal
+            }
         }
 
         public void command1() {
@@ -51,13 +56,14 @@ public class Example1 {
     }
 
     private static class Cmd1Shell extends SpelShell {
+        private static final String DELIMITER = "-------------------------------\n";
         private int number1;
         private int number2;
 
         public Cmd1Shell(Path initialDir) {
             super(initialDir);
             setPrompt(() ->
-                "---------------------\n" +
+                DELIMITER +
                     "Adding numbers\n" +
                     "number1=" + number1 + "\n" +
                     "number2=" + number2 + "\n" +
@@ -66,11 +72,7 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new SpelShellExitException();
             });
-            try {
-                runShell(true);
-            } catch (SpelShellExitException ex) {
-                //exit
-            }
+            runShell();
         }
 
         public void setNumber1(int number1) {
@@ -82,10 +84,11 @@ public class Example1 {
         }
 
         public void calculate() {
-            println(format(
-                "---------------------\n%s + %s = %s",
+            printf(
+                DELIMITER +
+                    "%s + %s = %s\n",
                 number1, number2, number1 + number2
-            ));
+            );
         }
     }
 
@@ -106,7 +109,7 @@ public class Example1 {
                 throw new SpelShellExitException();
             });
             try {
-                runShell(true);
+                runShell();
             } catch (SpelShellExitException ex) {
                 //exit
             }

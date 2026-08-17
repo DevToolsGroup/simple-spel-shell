@@ -26,7 +26,6 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class Main extends SpelShell {
@@ -36,7 +35,7 @@ public class Main extends SpelShell {
     }
 
     static void main(String[] args) {
-        String initDir = Files.exists(Path.of("target")) ? "target/" : "./";
+        String initDir = new File("target").exists() ? "target/" : "./";
         Main shell = new Main(initDir);
 
         shell.setPrompt("");
@@ -46,7 +45,7 @@ public class Main extends SpelShell {
         shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);
         shell.setExprHistoryFile(new File(initDir + "history.log"));
-        shell.runShell(false);
+        shell.runShell();
     }
 
     public void sayHi() throws IOException {
