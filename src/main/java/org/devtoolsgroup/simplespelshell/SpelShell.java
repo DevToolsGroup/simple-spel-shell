@@ -73,7 +73,7 @@ public class SpelShell implements Shell {
     private static final String IDENTIFIER_PAT = "[a-zA-Z_$][a-zA-Z_$0-9]*";
     private static final Pattern SET_VAR_PAT = pat("^\\s*(%s)\\s*=(.+)$".formatted(IDENTIFIER_PAT));
     private static final Pattern ZERO_ARG_METHOD_PAT = pat("^\\s*(%s)\\s*$".formatted(IDENTIFIER_PAT));
-    private static final Pattern ONE_ARG_METHOD_PAT = pat("%s\\s+(.*)$".formatted(ZERO_ARG_METHOD_PAT.pattern()));
+    private static final Pattern ONE_ARG_METHOD_PAT = pat("^\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT));
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)(\\\\+)\\s*$");
     private static final Pattern NAME_SPLIT_PAT =
         Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])");

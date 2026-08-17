@@ -39,19 +39,21 @@ public class Example1 {
             super(initialDir);
             this.initialDir = initialDir;
             setPrompt("[main menu] SpEL> ");
-            try {
-                runShell();
-            } catch (SpelShellExitException ex) {
-                //ignore the child shell exit signal
+            while (true) {
+                try {
+                    runShell();
+                } catch (SpelShellExitException ex) {
+                    //ignore the child shell exit signal
+                }
             }
         }
 
         public void command1() {
-            new Cmd1Shell(initialDir);
+            new Cmd1Shell(initialDir).runShell();
         }
 
         public void command2() {
-            new Cmd2Shell(initialDir);
+            new Cmd2Shell(initialDir).runShell();
         }
     }
 
@@ -72,7 +74,6 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new SpelShellExitException();
             });
-            runShell();
         }
 
         public void setNumber1(int number1) {
@@ -93,13 +94,14 @@ public class Example1 {
     }
 
     private static class Cmd2Shell extends SpelShell {
+        private static final String DELIMITER = "-------------------------------\n";
         private int number1;
         private int number2;
 
         public Cmd2Shell(Path initialDir) {
             super(initialDir);
             setPrompt(() ->
-                "---------------------\n" +
+                DELIMITER +
                     "Multiplying numbers\n" +
                     "number1=" + number1 + "\n" +
                     "number2=" + number2 + "\n" +
@@ -108,11 +110,6 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new SpelShellExitException();
             });
-            try {
-                runShell();
-            } catch (SpelShellExitException ex) {
-                //exit
-            }
         }
 
         public void setNumber1(int number1) {
@@ -124,10 +121,11 @@ public class Example1 {
         }
 
         public void calculate() {
-            println(format(
-                "---------------------\n%s * %s = %s",
+            printf(
+                DELIMITER +
+                    "%s * %s = %s\n",
                 number1, number2, number1 * number2
-            ));
+            );
         }
     }
 }
