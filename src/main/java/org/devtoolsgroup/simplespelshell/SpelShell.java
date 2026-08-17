@@ -25,6 +25,7 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.EvaluationException;
@@ -60,6 +61,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -106,8 +108,8 @@ public class SpelShell implements Shell {
     public SpelShell(Path initialDir) {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
-            "setInput", "setOutput", "setGlobalFunctions", "setCurrentDirectoryValidator", "addTypeConverter",
-            "setRootObject"));
+            "setUserInput", "setUserOutput", "setCurrentDirectoryValidator", "addTypeConverter", "setRootObject",
+            "setOnExit"));
 
         expressionInterceptor = (expr, _) -> SpelShell.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
 
@@ -131,6 +133,7 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object runScript(InputStream scriptInput, Charset cs, boolean stopOnException) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInput, cs));
         // @formatter:off
@@ -182,11 +185,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object runScript(InputStream scriptInp, boolean stopOnException) {
         return runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
     }
 
     @Override
+    @Order(-100)
     public Object runScript(String script, boolean stopOnException) {
         return runScript(
             new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
@@ -196,21 +201,25 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
         return runScript(Files.readString(path, cs), stopOnException);
     }
 
     @Override
+    @Order(-100)
     public Object runScript(Path path, boolean stopOnException) throws IOException {
         return runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
     }
 
     @Override
+    @Order(-100)
     public Object runShell() {
         return runScript(System.in, false);
     }
 
     @Override
+    @Order(-100)
     public Object eval(Object newVar, String script) {
         Supplier<String> promptBefore = this.prompt;
         int lengthBefore = this.printEvalResultLength;
@@ -224,37 +233,44 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object eval(String script) {
         return eval(null, script);
     }
 
     @Override
+    @Order(-100)
     public void print(Object obj) {
         userOutput.print(obj.toString());
     }
 
     @Override
+    @Order(-100)
     public void println(Object obj) {
         userOutput.println(obj);
     }
 
     @Override
+    @Order(-100)
     public void printf(String format, Object... args) {
         userOutput.printf(format, args);
     }
 
     @Override
+    @Order(-100)
     public String format(String format, Object... args) {
         return String.format(format, args);
     }
 
     @Override
+    @Order(-100)
     public String prompt(String prompt) throws IOException {
         print(prompt);
         return userInput.readLine();
     }
 
     @Override
+    @Order(-100)
     public void exit(String msg) {
         if (onExit != null) {
             onExit.accept(msg);
@@ -262,48 +278,62 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void exit() {
         exit("");
     }
 
     @Override
+    @Order(-100)
     public void exn(String msg) {
         throw new SpelShellException(false, msg);
     }
 
     @Override
-    public void exnf(String format, Object... args) {
-        exn(format(format, args));
-    }
-
-    @Override
+    @Order(-100)
     public void exnStackTrace(String msg) {
         throw new SpelShellException(true, msg);
     }
 
     @Override
+    @Order(-100)
+    public void exnf(String format, Object... args) {
+        exn(format(format, args));
+    }
+
+    @Override
+    @Order(-100)
     public void help(String filter) {
+        AtomicBoolean firstNonNegativeFound = new AtomicBoolean(false);
         getExposedMethods()
             .filter(method -> matches(method.getName(), filter))
+            .sorted(Comparator.comparing(SpelShell::getSortOrder).thenComparing(Method::getName))
             .map(method -> {
                 String params = Arrays.stream(method.getParameterTypes())
                     .map(Class::getName)
                     .collect(Collectors.joining(", "));
                 String returnType = method.getReturnType().getName();
                 String name = method.getName();
-                return format("%s(%s): %s", name, params, returnType);
+                String delim;
+                if (!firstNonNegativeFound.get() && getSortOrder(method) >= 0) {
+                    firstNonNegativeFound.set(true);
+                    delim = "---\n";
+                } else {
+                    delim = "";
+                }
+                return (format("%s%s(%s): %s", delim, name, params, returnType));
             })
-            .distinct()
-            .sorted()
             .forEach(this::println);
     }
 
     @Override
+    @Order(-100)
     public void help() {
         help("");
     }
 
     @Override
+    @Order(-100)
     public void hist(int num) throws IOException {
         List<String> allHist = loadHistory(exprHistoryFile);
         for (int i = Math.max(0, allHist.size() - num); i < allHist.size(); i++) {
@@ -312,11 +342,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void hist() throws IOException {
         hist(200);
     }
 
     @Override
+    @Order(-100)
     public void hist(String filter) throws IOException {
         String finalFilter = filter.trim().toLowerCase();
         loadHistory(exprHistoryFile).stream()
@@ -325,6 +357,7 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object var(String name, Object value) {
         if (name == null) {
             exn("Variable name must not be null.");
@@ -339,11 +372,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Object var(String name) {
         return variables.get(name);
     }
 
     @Override
+    @Order(-100)
     public void var() {
         variables.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
@@ -357,11 +392,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
-    public Map<String, Object> allVariables() {
+    @Order(-100)
+    public Map<String, Object> getAllVariables() {
         return new HashMap<>(variables);
     }
 
     @Override
+    @Order(-100)
     public Path cd(Path path) {
         if (path.toString().isBlank()) {
             return curDir;
@@ -381,21 +418,25 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public Path cd() {
         return cd(Path.of(".."));
     }
 
     @Override
+    @Order(-100)
     public void pwd() {
         println(curDir);
     }
 
     @Override
+    @Order(-100)
     public File getFile(Path path) {
         return curDir.resolve(path).toAbsolutePath().normalize().toFile();
     }
 
     @Override
+    @Order(-100)
     public void write(Path path, String text) throws IOException {
         File fileToWriteTo = getFile(path);
         if (!isParentChild(curDir, fileToWriteTo.toPath())) {
@@ -412,11 +453,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public String read(Path path) throws IOException {
         return Files.readString(getFile(path).toPath(), StandardCharsets.UTF_8);
     }
 
     @Override
+    @Order(-100)
     public void mkdir(boolean autoCd, Path path) {
         if (!getFile(path).mkdirs()) {
             exnf("There was an error when creating one of the specified directories %s", path);
@@ -428,11 +471,13 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void mkdir(Path path) {
         mkdir(true, path);
     }
 
     @Override
+    @Order(-100)
     public void ll(Path path) throws IOException {
         List<Path> children;
         try (DirectoryStream<Path> entries = Files.newDirectoryStream(curDir.resolve(path))) {
@@ -467,56 +512,67 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void ll() throws IOException {
         ll(Path.of(""));
     }
 
     @Override
+    @Order(-100)
     public void setUserInput(InputStream userInput, Charset cs) {
         this.userInput = new BufferedReader(new InputStreamReader(userInput, cs));
     }
 
     @Override
+    @Order(-100)
     public void setUserInput(InputStream userInput) {
         setUserInput(userInput, StandardCharsets.UTF_8);
     }
 
     @Override
+    @Order(-100)
     public void setUserOutput(PrintStream userOutput) {
         this.userOutput = userOutput;
     }
 
     @Override
+    @Order(-100)
     public void setPrintExpression(boolean printExpression) {
         this.printExpression = printExpression;
     }
 
     @Override
+    @Order(-100)
     public void setPrompt(Supplier<String> prompt) {
         this.prompt = prompt;
     }
 
     @Override
+    @Order(-100)
     public void setPrompt(String prompt) {
         setPrompt(() -> prompt);
     }
 
     @Override
+    @Order(-100)
     public void setExpressionInterceptor(BiFunction<String, Consumer<String>, String> expressionInterceptor) {
         this.expressionInterceptor = expressionInterceptor;
     }
 
     @Override
+    @Order(-100)
     public void setPrintEvalResultLength(int printEvalResultLength) {
         this.printEvalResultLength = printEvalResultLength;
     }
 
     @Override
+    @Order(-100)
     public void setExprHistoryFile(File exprHistoryFile) {
         this.exprHistoryFile = exprHistoryFile;
     }
 
     @Override
+    @Order(-100)
     public void setRootObject(Object rootObject) {
         this.rootObject = rootObject;
         zeroArgMethods = getMethodsWithNumOfArgs(rootObject, 0);
@@ -524,18 +580,21 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void addTypeConverter(Converter<?, ?> typeConverter) {
         typeConverters.add(typeConverter);
         initSpelCtx();
     }
 
     @Override
+    @Order(-100)
     public void setOperatorOverloader(OperatorOverloader operatorOverloader) {
         this.operatorOverloader = operatorOverloader;
         initSpelCtx();
     }
 
     @Override
+    @Order(-100)
     public void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> currentDirectoryValidator) {
         this.currentDirectoryValidator = null;
         cd(newCurDir);
@@ -546,6 +605,7 @@ public class SpelShell implements Shell {
     }
 
     @Override
+    @Order(-100)
     public void setOnExit(Consumer<String> onExit) {
         this.onExit = onExit;
     }
@@ -690,6 +750,11 @@ public class SpelShell implements Shell {
     private Stream<Method> getExposedMethods() {
         return Arrays.stream(rootObject.getClass().getMethods())
             .filter(method -> !Modifier.isStatic(method.getModifiers()) && isMethodToShow(method.getName()));
+    }
+
+    private static int getSortOrder(Method method) {
+        Order order = method.getAnnotation(Order.class);
+        return order == null ? 0 : order.value();
     }
 
     public static class SpelShellException extends RuntimeException {

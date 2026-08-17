@@ -92,7 +92,7 @@ public interface Shell {
 
     void var();
 
-    Map<String, Object> allVariables();
+    Map<String, Object> getAllVariables();
 
     Path cd(Path path);
 
