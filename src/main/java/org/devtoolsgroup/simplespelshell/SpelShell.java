@@ -632,6 +632,9 @@ public class SpelShell implements Shell {
     }
 
     private static String rewriteExpr(String expr, List<String> zeroArgMethods, List<String> oneArgMethods) {
+        if (expr == null) {
+            return null;
+        }
         Matcher matcher = SET_VAR_PAT.matcher(expr);
         if (matcher.matches()) {
             return "var('%s',%s)".formatted(matcher.group(1), matcher.group(2));
