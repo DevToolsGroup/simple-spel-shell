@@ -24,9 +24,14 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.widget.AutopairWidgets;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 public class Main extends SpelShell {
 
@@ -40,16 +45,23 @@ public class Main extends SpelShell {
 
         shell.setPrompt("");
         shell.setPrintEvalResultLength(0);
-        shell.runScript(Path.of(initDir, "../src/test/resources/init_script.txt"), true);
+        shell.runScript(Path.of(initDir, "../src/test/resources/init_script.txt"));
 
         shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);
         shell.setExprHistoryFile(new File(initDir + "history.log"));
-        shell.runShell();
+        shell.runShell(terminalLineReader());
     }
 
     public void sayHi() throws IOException {
         String name = prompt("What is your name? ");
         print(format("Hi, %s!\n", name));
+    }
+
+    public static Supplier<String> terminalLineReader() {
+        LineReader reader = LineReaderBuilder.builder().build();
+        AutopairWidgets autopairWidgets = new AutopairWidgets(reader, true);
+        autopairWidgets.enable();
+        return reader::readLine;
     }
 }

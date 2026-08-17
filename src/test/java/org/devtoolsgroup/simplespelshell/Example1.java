@@ -26,6 +26,7 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.function.Supplier;
 
 public class Example1 {
     static void main() {
@@ -34,14 +35,16 @@ public class Example1 {
 
     private static class MainShell extends SpelShell {
         private final Path initialDir;
+        private final Supplier<String> terminalLineReader;
 
         public MainShell(Path initialDir) {
             super(initialDir);
             this.initialDir = initialDir;
+            this.terminalLineReader = Main.terminalLineReader();
             setPrompt("[main menu] SpEL> ");
             while (true) {
                 try {
-                    runShell();
+                    runShell(terminalLineReader);
                 } catch (SpelShellExitException ex) {
                     //ignore the child shell exit signal
                 }
@@ -49,11 +52,11 @@ public class Example1 {
         }
 
         public void command1() {
-            new Cmd1Shell(initialDir).runShell();
+            new Cmd1Shell(initialDir).runShell(terminalLineReader);
         }
 
         public void command2() {
-            new Cmd2Shell(initialDir).runShell();
+            new Cmd2Shell(initialDir).runShell(terminalLineReader);
         }
     }
 

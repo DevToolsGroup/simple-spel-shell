@@ -36,13 +36,14 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
@@ -134,88 +135,26 @@ public class SpelShell implements Shell {
 
     @Override
     @Order(-100)
-    public Object runScript(InputStream scriptInput, Charset cs, boolean stopOnException) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(scriptInput, cs));
-        // @formatter:off
-        Consumer<String> saveToHist = exprHistoryFile != null
-            ? expr -> SpelShell.saveExprToHistFile(expr, exprHistoryFile)
-            : _ -> {};
-        // @formatter:on
-        while (true) {
-            String expr;
-            try {
-                print(prompt.get());
-                expr = readExpr(reader);
-                if (expressionInterceptor != null) {
-                    expr = expressionInterceptor.apply(expr, saveToHist);
-                }
-                if (expr == null) {
-                    return lastEvalResult;
-                }
-                if (expr.isBlank()) {
-                    continue;
-                }
-                if (printExpression) {
-                    println(expr);
-                }
-                Object res = evaluate(expr);
-                saveToHist.accept(expr);
-                if (printEvalResultLength > 0 && res != null) {
-                    String resStr = res.toString();
-                    if (resStr.length() <= printEvalResultLength) {
-                        println(resStr);
-                    } else {
-                        println(resStr.substring(0, printEvalResultLength) + "...");
-                    }
-                }
-            } catch (SpelShellExitException ex) {
-                throw ex;
-            } catch (Exception ex) {
-                if (stopOnException) {
-                    throw new SpelShellException(ex.getMessage(), ex);
-                }
-                if (ex.getMessage() != null) {
-                    println(ex.getMessage());
-                }
-                if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
-                    ex.printStackTrace(userOutput);
-                }
-            }
-        }
+    public Object runScript(String script) {
+        return runScript(stringExprReader(script), true);
     }
 
     @Override
     @Order(-100)
-    public Object runScript(InputStream scriptInp, boolean stopOnException) {
-        return runScript(scriptInp, StandardCharsets.UTF_8, stopOnException);
+    public Object runScript(Path path) throws IOException {
+        return runScript(fileExprReader(path, StandardCharsets.UTF_8), true);
     }
 
     @Override
     @Order(-100)
-    public Object runScript(String script, boolean stopOnException) {
-        return runScript(
-            new ByteArrayInputStream(script.getBytes(StandardCharsets.UTF_8)),
-            StandardCharsets.UTF_8,
-            stopOnException
-        );
+    public Object runScript(Path path, Charset cs) throws IOException {
+        return runScript(fileExprReader(path, cs), true);
     }
 
     @Override
     @Order(-100)
-    public Object runScript(Path path, Charset cs, boolean stopOnException) throws IOException {
-        return runScript(Files.readString(path, cs), stopOnException);
-    }
-
-    @Override
-    @Order(-100)
-    public Object runScript(Path path, boolean stopOnException) throws IOException {
-        return runScript(Files.readString(path, StandardCharsets.UTF_8), stopOnException);
-    }
-
-    @Override
-    @Order(-100)
-    public Object runShell() {
-        return runScript(System.in, false);
+    public Object runShell(Supplier<String> lineReader) {
+        return runScript(() -> readExpr(lineReader), false);
     }
 
     @Override
@@ -226,7 +165,7 @@ public class SpelShell implements Shell {
         setPrompt("");
         setPrintEvalResultLength(0);
         var("$", newVar);
-        Object res = runScript(script, true);
+        Object res = runScript(script);
         setPrompt(promptBefore);
         setPrintEvalResultLength(lengthBefore);
         return res;
@@ -614,10 +553,40 @@ public class SpelShell implements Shell {
         return setLastEvalResult(parser.parseExpression(expr).getValue(spelCtx, rootObject, Object.class));
     }
 
-    private static String readExpr(BufferedReader reader) throws IOException {
+    private static Supplier<String> handleIoException(BufferedReader bufferedReader) {
+        return () -> {
+            try {
+                return bufferedReader.readLine();
+            } catch (IOException ex) {
+                throw new SpelShellException(ex.getMessage(), ex);
+            }
+        };
+    }
+
+    private static Supplier<String> exprReader(BufferedReader bufferedReader) {
+        final boolean[] closed = {false};
+        return () -> {
+            if (closed[0]) {
+                return null;
+            }
+            String expr = SpelShell.readExpr(handleIoException(bufferedReader));
+            if (expr == null) {
+                try {
+                    bufferedReader.close();
+                } catch (IOException ex) {
+                    throw new SpelShellException(ex.getMessage(), ex);
+                } finally {
+                    closed[0] = true;
+                }
+            }
+            return expr;
+        };
+    }
+
+    private static String readExpr(Supplier<String> lineReader) {
         StringBuilder sb = new StringBuilder();
         while (true) {
-            String line = reader.readLine();
+            String line = lineReader.get();
             if (line == null) {
                 return sb.isEmpty() ? null : sb.toString();
             }
@@ -758,6 +727,63 @@ public class SpelShell implements Shell {
     private static int getSortOrder(Method method) {
         Order order = method.getAnnotation(Order.class);
         return order == null ? 0 : order.value();
+    }
+
+    private Object runScript(Supplier<String> exprReader, boolean stopOnException) {
+        // @formatter:off
+        Consumer<String> saveToHist = exprHistoryFile != null
+            ? expr -> SpelShell.saveExprToHistFile(expr, exprHistoryFile)
+            : _ -> {};
+        // @formatter:on
+        while (true) {
+            String expr;
+            try {
+                print(prompt.get());
+                expr = exprReader.get();
+                if (expressionInterceptor != null) {
+                    expr = expressionInterceptor.apply(expr, saveToHist);
+                }
+                if (expr == null) {
+                    return lastEvalResult;
+                }
+                if (expr.isBlank()) {
+                    continue;
+                }
+                if (printExpression) {
+                    println(expr);
+                }
+                Object res = evaluate(expr);
+                saveToHist.accept(expr);
+                if (printEvalResultLength > 0 && res != null) {
+                    String resStr = res.toString();
+                    if (resStr.length() <= printEvalResultLength) {
+                        println(resStr);
+                    } else {
+                        println(resStr.substring(0, printEvalResultLength) + "...");
+                    }
+                }
+            } catch (SpelShellExitException ex) {
+                throw ex;
+            } catch (Exception ex) {
+                if (stopOnException) {
+                    throw new SpelShellException(ex.getMessage(), ex);
+                }
+                if (ex.getMessage() != null) {
+                    println(ex.getMessage());
+                }
+                if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
+                    ex.printStackTrace(userOutput);
+                }
+            }
+        }
+    }
+
+    private static Supplier<String> stringExprReader(String script) {
+        return SpelShell.exprReader(new BufferedReader(new StringReader(script)));
+    }
+
+    private static Supplier<String> fileExprReader(Path path, Charset cs) throws IOException {
+        return SpelShell.exprReader(new BufferedReader(new FileReader(path.toFile(), cs)));
     }
 
     public static class SpelShellException extends RuntimeException {

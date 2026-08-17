@@ -40,17 +40,13 @@ import java.util.function.Supplier;
 
 public interface Shell {
 
-    Object runScript(InputStream scriptInp, Charset cs, boolean stopOnException);
+    Object runScript(String script);
 
-    Object runScript(InputStream scriptInp, boolean stopOnException);
+    Object runScript(Path path) throws IOException;
 
-    Object runScript(String script, boolean stopOnException);
+    Object runScript(Path path, Charset cs) throws IOException;
 
-    Object runScript(Path path, Charset cs, boolean stopOnException) throws IOException;
-
-    Object runScript(Path path, boolean stopOnException) throws IOException;
-
-    Object runShell();
+    Object runShell(Supplier<String> lineReader);
 
     Object eval(Object newVar, String script);
 

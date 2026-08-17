@@ -1,2 +1,2 @@
-_pi=T(Math).PI
-_e=T(Math).E
+pi=T(Math).PI
+e=T(Math).E
