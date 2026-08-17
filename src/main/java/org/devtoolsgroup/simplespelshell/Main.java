@@ -40,7 +40,7 @@ public class Main extends SpelShell {
 
         shell.setPrompt("");
         shell.setPrintEvalResultLength(0);
-        shell.runScript("pi=T(java.lang.Math).PI\ne=T(java.lang.Math).E", true);
+        shell.runScript("pi=T(Math).PI\ne=T(Math).E", true);
 
         shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);
