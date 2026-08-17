@@ -109,7 +109,7 @@ public class SpelShell implements Shell {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
             "setUserInput", "setUserOutput", "setCurrentDirectoryValidator", "addTypeConverter", "setRootObject",
-            "setOnExit"));
+            "setOnExit", "getAllVariables"));
 
         expressionInterceptor = (expr, _) -> SpelShell.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
 
