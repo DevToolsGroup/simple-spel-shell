@@ -34,13 +34,13 @@ public class Main extends SpelShell {
         super(Path.of(initDir));
     }
 
-    static void main(String[] args) {
+    static void main(String[] args) throws IOException {
         String initDir = new File("target").exists() ? "target/" : "./";
         Main shell = new Main(initDir);
 
         shell.setPrompt("");
         shell.setPrintEvalResultLength(0);
-        shell.runScript("pi=T(Math).PI\ne=T(Math).E", true);
+        shell.runScript(Path.of(initDir, "../src/test/resources/init_script.txt"), true);
 
         shell.setPrompt("SpEL> ");
         shell.setPrintEvalResultLength(100);

@@ -1,0 +1,2 @@
+_pi=T(Math).PI
+_e=T(Math).E
