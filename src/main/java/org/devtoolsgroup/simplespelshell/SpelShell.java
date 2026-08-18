@@ -79,8 +79,16 @@ public class SpelShell implements Shell {
     private static final Pattern ZERO_ARG_METHOD_PAT = pat("^\\s*(%s)\\s*$".formatted(IDENTIFIER_PAT));
     private static final Pattern ONE_ARG_METHOD_PAT = pat("^\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT));
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)(\\\\+)\\s*$");
-    private static final Pattern NAME_SPLIT_PAT =
-        Pattern.compile("(?<=[a-z0-9])(?=[A-Z])|_|-|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])");
+    private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
+        "(?<=[a-z])(?=[A-Z])" +
+            "|(?<=[^_])(?=_)|(?<=_)(?=[^_])" +
+            "|(?<=[^-])(?=-)|(?<=-)(?=[^-])" +
+            "|(?<=[^.])(?=\\.)|(?<=\\.)(?=[^.])" +
+            "|(?<=[^$])(?=\\$)|(?<=\\$)(?=[^$])" +
+            "|(?<=[^/])(?=/)|(?<=/)(?=[^/])" +
+            "|(?<=[^\\\\])(?=\\\\)|(?<=\\\\)(?=[^\\\\])" +
+            "|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])"
+    );
 
     private Supplier<String> prompt = () -> "SpEL> ";
     private BiFunction<String, Consumer<String>, String> expressionInterceptor;
@@ -442,24 +450,26 @@ public class SpelShell implements Shell {
             String.CASE_INSENSITIVE_ORDER
         ));
 
-        // Find the largest size so all sizes can be right-aligned.
-        long maxSize = 0;
-        for (Path child : children) {
-            if (Files.isRegularFile(child)) {
-                maxSize = Math.max(maxSize, Files.size(child));
-            }
-        }
+        printPaths(children);
+    }
 
-        int width = String.valueOf(maxSize).length();
-
-        for (Path child : children) {
-            if (Files.isDirectory(child)) {
-                printf("%" + width + "s %s/\n", "", child.getFileName());
-            } else {
-                long size = Files.size(child);
-                printf("%" + width + "d %s\n", size, child.getFileName());
-            }
+    @Order(-100)
+    @Override
+    public void listFiles(String pattern) throws IOException {
+        try (Stream<Path> files = Files.walk(curDir)) {
+            printPaths(
+                files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> matches(curDir.relativize(path).toString(), pattern))
+                    .toList()
+            );
         }
+    }
+
+    @Order(-100)
+    @Override
+    public void listFiles() throws IOException {
+        listFiles("");
     }
 
     @Order(-100)
@@ -703,7 +713,7 @@ public class SpelShell implements Shell {
         if (patternL.isEmpty()) {
             return true;
         }
-        String[] parts = NAME_SPLIT_PAT.split(name);
+        String[] parts = splitForMatch(name);
         String nameL = name.toLowerCase();
         int partIdx = 0;
         int partBeginIdx = 0;
@@ -723,6 +733,10 @@ public class SpelShell implements Shell {
             }
         }
         return p > maxP;
+    }
+
+    protected static String[] splitForMatch(String name) {
+        return NAME_SPLIT_PAT.split(name);
     }
 
     private static Pattern pat(String regex) {
@@ -800,6 +814,27 @@ public class SpelShell implements Shell {
 
     private static Supplier<String> fileExprReader(Path path, Charset cs) throws IOException {
         return SpelShell.exprReader(new BufferedReader(new FileReader(path.toFile(), cs)));
+    }
+
+    private void printPaths(List<Path> absPaths) throws IOException {
+        // Find the largest size so all sizes can be right-aligned.
+        long maxSize = 0;
+        for (Path absPath : absPaths) {
+            if (Files.isRegularFile(absPath)) {
+                maxSize = Math.max(maxSize, Files.size(absPath));
+            }
+        }
+
+        int width = String.valueOf(maxSize).length();
+
+        for (Path absPath : absPaths) {
+            Path relPath = curDir.relativize(absPath);
+            if (Files.isDirectory(absPath)) {
+                printf("%" + width + "s %s/\n", "", relPath);
+            } else {
+                printf("%" + width + "d %s\n", Files.size(absPath), relPath);
+            }
+        }
     }
 
     public static class SpelShellException extends RuntimeException {

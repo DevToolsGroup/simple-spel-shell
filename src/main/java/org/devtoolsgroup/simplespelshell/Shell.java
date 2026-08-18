@@ -107,6 +107,10 @@ public interface Shell {
 
     void ll(Path path) throws IOException;
 
+    void listFiles(String pattern) throws IOException;
+
+    void listFiles() throws IOException;
+
     void ll() throws IOException;
 
     void setPromptFn(Function<String, String> promptFn);
