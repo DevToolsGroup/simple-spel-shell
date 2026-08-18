@@ -455,21 +455,48 @@ public class SpelShell implements Shell {
 
     @Order(-100)
     @Override
-    public void listFiles(String pattern) throws IOException {
+    public List<File> findFilesByName(String pattern) throws IOException {
         try (Stream<Path> files = Files.walk(curDir)) {
-            printPaths(
-                files
-                    .filter(Files::isRegularFile)
-                    .filter(path -> matches(curDir.relativize(path).toString(), pattern))
-                    .toList()
-            );
+            return files
+                .filter(path -> !curDir.equals(path))
+                .filter(path -> matches(curDir.relativize(path).toString(), pattern))
+                .map(Path::toFile)
+                .toList();
         }
+    }
+
+    @Order(-100)
+    @Override
+    public void listFiles(String pattern) throws IOException {
+        printPaths(
+            findFilesByName(pattern).stream()
+                .map(File::toPath)
+                .filter(Files::isRegularFile)
+                .toList()
+        );
     }
 
     @Order(-100)
     @Override
     public void listFiles() throws IOException {
         listFiles("");
+    }
+
+    @Order(-100)
+    @Override
+    public void listDirs(String pattern) throws IOException {
+        printPaths(
+            findFilesByName(pattern).stream()
+                .map(File::toPath)
+                .filter(Files::isDirectory)
+                .toList()
+        );
+    }
+
+    @Order(-100)
+    @Override
+    public void listDirs() throws IOException {
+        listDirs("");
     }
 
     @Order(-100)

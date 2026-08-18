@@ -31,6 +31,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
@@ -107,9 +108,15 @@ public interface Shell {
 
     void ll(Path path) throws IOException;
 
+    List<File> findFilesByName(String pattern) throws IOException;
+
     void listFiles(String pattern) throws IOException;
 
     void listFiles() throws IOException;
+
+    void listDirs(String pattern) throws IOException;
+
+    void listDirs() throws IOException;
 
     void ll() throws IOException;
 
