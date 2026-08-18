@@ -112,7 +112,10 @@ public class SpelShell implements Shell {
             "setUserInput", "setUserOutput", "setCurrentDirectoryValidator", "addTypeConverter", "setRootObject",
             "setOnExit", "getAllVariables"));
 
-        expressionInterceptor = (expr, _) -> SpelShell.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
+        expressionInterceptor = (expr, saveToHist) -> {
+            saveToHist.accept(expr);
+            return SpelShell.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
+        };
 
         typeConverters.add(new Converter<String, Path>() {
             @Override
@@ -675,7 +678,7 @@ public class SpelShell implements Shell {
     private static void saveExprToHistFile(String expr, File histFile) {
         try (FileWriter wr = new FileWriter(histFile, StandardCharsets.UTF_8, true)) {
             wr.append("\n").append(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
-                .append("\n").append(expr);
+                .append(" ").append(expr);
         } catch (IOException ex) {
             throw new SpelShellException(ex.getMessage(), ex);
         }
@@ -753,7 +756,6 @@ public class SpelShell implements Shell {
                     println(expr);
                 }
                 Object res = evaluate(expr);
-                saveToHist.accept(expr);
                 if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
                     if (resStr.length() <= printEvalResultLength) {
