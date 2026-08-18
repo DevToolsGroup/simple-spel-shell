@@ -888,11 +888,18 @@ public class SpelShell implements Shell {
     }
 
     public static class SpelShellExitException extends RuntimeException {
+        private final Object result;
+
         public SpelShellExitException() {
+            result = null;
         }
 
-        public SpelShellExitException(String message) {
-            super(message);
+        public SpelShellExitException(Object result) {
+            this.result = result;
+        }
+
+        public Object getResult() {
+            return result;
         }
     }
 

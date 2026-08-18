@@ -26,14 +26,18 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Supplier;
+
+import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
 
 public class Example1 {
     static void main() {
         new MainShell(Path.of(new File("target").exists() ? "target" : "."));
     }
 
-    private static class MainShell extends SpelShell {
+    public static class MainShell extends SpelShell {
+        public static final String DELIMITER = "-------------------------------\n";
         private final Path initialDir;
         private final Supplier<String> terminalLineReader;
 
@@ -46,27 +50,28 @@ public class Example1 {
                 try {
                     runShell(terminalLineReader);
                 } catch (SpelShellExitException ex) {
-                    //ignore the child shell exit signal
+                    //copy all variables from the child shell to the parent shell
+                    ((Map<String, Object>) ex.getResult()).forEach(this::var);
                 }
             }
         }
 
         public void command1() {
-            new Cmd1Shell(initialDir).runShell(terminalLineReader);
+            new Cmd1Shell(initialDir, getAllVariables()).runShell(terminalLineReader);
         }
 
         public void command2() {
-            new Cmd2Shell(initialDir).runShell(terminalLineReader);
+            new Cmd2Shell(initialDir, getAllVariables()).runShell(terminalLineReader);
         }
     }
 
     private static class Cmd1Shell extends SpelShell {
-        private static final String DELIMITER = "-------------------------------\n";
         private int number1;
         private int number2;
 
-        public Cmd1Shell(Path initialDir) {
+        public Cmd1Shell(Path initialDir, Map<String, Object> variables) {
             super(initialDir);
+            variables.forEach(this::var);
             setPrompt(() ->
                 DELIMITER +
                     "Adding numbers\n" +
@@ -75,7 +80,8 @@ public class Example1 {
                     "[adder] SpEL> "
             );
             setOnExit(_ -> {
-                throw new SpelShellExitException();
+                //returning all variables to the parent shell
+                throw new SpelShellExitException(getAllVariables());
             });
         }
 
@@ -87,22 +93,24 @@ public class Example1 {
             this.number2 = number2;
         }
 
-        public void calculate() {
+        public int calculate() {
+            int result = number1 + number2;
             printf(
                 DELIMITER +
                     "%s + %s = %s\n",
                 number1, number2, number1 + number2
             );
+            return result;
         }
     }
 
     private static class Cmd2Shell extends SpelShell {
-        private static final String DELIMITER = "-------------------------------\n";
         private int number1;
         private int number2;
 
-        public Cmd2Shell(Path initialDir) {
+        public Cmd2Shell(Path initialDir, Map<String, Object> variables) {
             super(initialDir);
+            variables.forEach(this::var);
             setPrompt(() ->
                 DELIMITER +
                     "Multiplying numbers\n" +
@@ -111,7 +119,8 @@ public class Example1 {
                     "[multiplier] SpEL> "
             );
             setOnExit(_ -> {
-                throw new SpelShellExitException();
+                //returning all variables to the parent shell
+                throw new SpelShellExitException(getAllVariables());
             });
         }
 
@@ -123,12 +132,14 @@ public class Example1 {
             this.number2 = number2;
         }
 
-        public void calculate() {
+        public int calculate() {
+            int result = number1 * number2;
             printf(
                 DELIMITER +
                     "%s * %s = %s\n",
-                number1, number2, number1 * number2
+                number1, number2, result
             );
+            return result;
         }
     }
 }
