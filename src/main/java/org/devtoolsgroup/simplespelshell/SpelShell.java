@@ -40,10 +40,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.charset.Charset;
@@ -65,6 +65,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -96,8 +97,8 @@ public class SpelShell implements Shell {
     private int printEvalResultLength = 100;
     private File exprHistoryFile;
 
-    private BufferedReader userInput = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
-    private PrintStream userOutput = System.out;
+    private Consumer<String> printFn;
+    private Function<String, String> promptFn;
     private Consumer<String> onExit = _ -> System.exit(1);
     private Path curDir;
     private Consumer<Path> currentDirectoryValidator;
@@ -110,7 +111,8 @@ public class SpelShell implements Shell {
         methodsToHide = new HashSet<>();
         methodsToHide.addAll(Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait",
             "setUserInput", "setUserOutput", "setCurrentDirectoryValidator", "addTypeConverter", "setRootObject",
-            "setOnExit", "getAllVariables"));
+            "setOnExit", "getAllVariables", "runShell", "setExprHistoryFile", "setExpressionInterceptor",
+            "setOperatorOverloader", "setPrintFn", "setPrompt", "setPromptFn", "exn", "exnStackTrace", "exnf"));
 
         expressionInterceptor = (expr, saveToHist) -> {
             saveToHist.accept(expr);
@@ -126,6 +128,17 @@ public class SpelShell implements Shell {
         operatorOverloader = new BasicOperatorOverloader();
         initSpelCtx();
         setRootObject(this);
+
+        setPrintFn(System.out::print);
+        BufferedReader defaultReader = new BufferedReader(new InputStreamReader(System.in, StandardCharsets.UTF_8));
+        setPromptFn(prompt -> {
+            print(prompt);
+            try {
+                return defaultReader.readLine();
+            } catch (IOException e) {
+                throw new SpelShellException(e.getMessage(), e);
+            }
+        });
 
         Path absInitialDir = initialDir.toAbsolutePath().normalize();
         curDir = Path.of(".").toAbsolutePath().normalize();
@@ -183,19 +196,19 @@ public class SpelShell implements Shell {
     @Override
     @Order(-100)
     public void print(Object obj) {
-        userOutput.print(obj.toString());
+        printFn.accept(String.valueOf(obj));
     }
 
     @Override
     @Order(-100)
     public void println(Object obj) {
-        userOutput.println(obj);
+        print(obj + "\n");
     }
 
     @Override
     @Order(-100)
     public void printf(String format, Object... args) {
-        userOutput.printf(format, args);
+        print(format(format, args));
     }
 
     @Override
@@ -206,9 +219,8 @@ public class SpelShell implements Shell {
 
     @Override
     @Order(-100)
-    public String prompt(String prompt) throws IOException {
-        print(prompt);
-        return userInput.readLine();
+    public String prompt(String prompt) {
+        return promptFn.apply(prompt);
     }
 
     @Override
@@ -459,22 +471,16 @@ public class SpelShell implements Shell {
         ll(Path.of(""));
     }
 
-    @Override
     @Order(-100)
-    public void setUserInput(InputStream userInput, Charset cs) {
-        this.userInput = new BufferedReader(new InputStreamReader(userInput, cs));
+    @Override
+    public void setPromptFn(Function<String, String> promptFn) {
+        this.promptFn = promptFn;
     }
 
-    @Override
     @Order(-100)
-    public void setUserInput(InputStream userInput) {
-        setUserInput(userInput, StandardCharsets.UTF_8);
-    }
-
     @Override
-    @Order(-100)
-    public void setUserOutput(PrintStream userOutput) {
-        this.userOutput = userOutput;
+    public void setPrintFn(Consumer<String> printFn) {
+        this.printFn = printFn;
     }
 
     @Override
@@ -774,10 +780,17 @@ public class SpelShell implements Shell {
                     println(ex.getMessage());
                 }
                 if (!(ex instanceof SpelShellException sse) || sse.isPrintStackTrace()) {
-                    ex.printStackTrace(userOutput);
+                    println(getStackTrace(ex));
                 }
             }
         }
+    }
+
+    private static String getStackTrace(Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        return sw.toString();
     }
 
     private static Supplier<String> stringExprReader(String script) {

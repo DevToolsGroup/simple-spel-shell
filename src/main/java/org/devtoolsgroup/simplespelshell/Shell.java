@@ -29,13 +29,12 @@ import org.springframework.expression.OperatorOverloader;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public interface Shell {
@@ -60,7 +59,7 @@ public interface Shell {
 
     String format(String format, Object... args);
 
-    String prompt(String prompt) throws IOException;
+    String prompt(String prompt);
 
     void exit(String msg);
 
@@ -110,11 +109,9 @@ public interface Shell {
 
     void ll() throws IOException;
 
-    void setUserInput(InputStream input, Charset cs);
+    void setPromptFn(Function<String, String> promptFn);
 
-    void setUserInput(InputStream userInput);
-
-    void setUserOutput(PrintStream userOutput);
+    void setPrintFn(Consumer<String> printFn);
 
     void setPrintExpression(boolean printExpression);
 
