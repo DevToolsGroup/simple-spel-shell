@@ -24,19 +24,20 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.util.function.Consumer;
+import java.util.function.Function;
 
-public interface WorkDirectory {
+public interface Shell2 extends ShellMethods {
 
-    void changeCurrentDir(Path path);
+    void updateConfigForScript(Function<SpelShellConfig, SpelShellConfig> updater);
 
-    void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> validator);
+    void updateConfigForRepl(Function<SpelShellConfig, SpelShellConfig> updater);
 
-    Path getCurDirAbsolutePath();
+    Object runRepl();
 
-    File getFile(Path path);
+    Object runScript(String script);
 
-    void write(Path path, String text);
+    Object runScript(Path path);
+
+    Object eval(Object tmpVar, String script);
 }

@@ -26,7 +26,6 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -75,7 +74,7 @@ public class WorkDirectoryImpl implements WorkDirectory {
     }
 
     @Override
-    public void write(Path path, String text, Charset cs) {
+    public void write(Path path, String text) {
         File fileToWriteTo = getFile(path);
         if (!ShellUtils.isParentChild(curDir, fileToWriteTo.toPath())) {
             throw new ShellException("Cannot write outside of the current directory %s".formatted(curDir));
@@ -86,16 +85,11 @@ public class WorkDirectoryImpl implements WorkDirectory {
         File parentDir = fileToWriteTo.getParentFile();
         if (parentDir.exists() || parentDir.mkdirs()) {
             try {
-                Files.writeString(fileToWriteTo.toPath(), text, cs);
+                Files.writeString(fileToWriteTo.toPath(), text, StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new ShellException(e);
             }
         }
         throw new ShellException("There was an error when creating parent directories %s".formatted(parentDir));
-    }
-
-    @Override
-    public void write(Path path, String text) {
-        write(path, text, StandardCharsets.UTF_8);
     }
 }
