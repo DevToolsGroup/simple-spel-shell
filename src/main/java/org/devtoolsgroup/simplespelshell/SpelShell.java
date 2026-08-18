@@ -98,11 +98,12 @@ public class SpelShell implements Shell {
 
     private Supplier<String> prompt = () -> "SpEL> ";
     private BiFunction<String, Consumer<String>, String> expressionInterceptor;
+    private Function<String, Boolean> isCommentLine = str -> str.trim().startsWith("//");
     private boolean printExpression;
 
     private final SpelExpressionParser parser = new SpelExpressionParser();
     private StandardEvaluationContext spelCtx;
-    private List<Converter<?, ?>> typeConverters = new ArrayList<>();
+    private final List<Converter<?, ?>> typeConverters = new ArrayList<>();
     private OperatorOverloader operatorOverloader;
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     private Object rootObject;
@@ -163,25 +164,25 @@ public class SpelShell implements Shell {
     @Order(-100)
     @Override
     public Object runScript(String script) {
-        return runScript(stringExprReader(script), true);
+        return runScript(stringExprReader(script, isCommentLine), true);
     }
 
     @Order(-100)
     @Override
     public Object runScript(Path path) throws IOException {
-        return runScript(fileExprReader(path, StandardCharsets.UTF_8), true);
+        return runScript(fileExprReader(path, StandardCharsets.UTF_8, isCommentLine), true);
     }
 
     @Order(-100)
     @Override
     public Object runScript(Path path, Charset cs) throws IOException {
-        return runScript(fileExprReader(path, cs), true);
+        return runScript(fileExprReader(path, cs, isCommentLine), true);
     }
 
     @Order(-1000)
     @Override
     public Object runShell(Supplier<String> lineReader) {
-        return runScript(() -> readExpr(lineReader), false);
+        return runScript(() -> readExpr(lineReader, isCommentLine), false);
     }
 
     @Order(-100)
@@ -547,6 +548,12 @@ public class SpelShell implements Shell {
         this.expressionInterceptor = expressionInterceptor;
     }
 
+    @Order(-1000)
+    @Override
+    public void setIsCommentLine(Function<String, Boolean> isCommentLine) {
+        this.isCommentLine = isCommentLine;
+    }
+
     @Order(-100)
     @Override
     public void setPrintEvalResultLength(int printEvalResultLength) {
@@ -612,13 +619,13 @@ public class SpelShell implements Shell {
         };
     }
 
-    private static Supplier<String> exprReader(BufferedReader bufferedReader) {
+    private static Supplier<String> exprReader(BufferedReader bufferedReader, Function<String, Boolean> isCommentLine) {
         final boolean[] closed = {false};
         return () -> {
             if (closed[0]) {
                 return null;
             }
-            String expr = SpelShell.readExpr(handleIoException(bufferedReader));
+            String expr = SpelShell.readExpr(handleIoException(bufferedReader), isCommentLine);
             if (expr == null) {
                 try {
                     bufferedReader.close();
@@ -632,12 +639,15 @@ public class SpelShell implements Shell {
         };
     }
 
-    private static String readExpr(Supplier<String> lineReader) {
+    private static String readExpr(Supplier<String> lineReader, Function<String, Boolean> isCommentLine) {
         StringBuilder sb = new StringBuilder();
         while (true) {
             String line = lineReader.get();
             if (line == null) {
                 return sb.isEmpty() ? null : sb.toString();
+            }
+            if (isCommentLine != null && isCommentLine.apply(line)) {
+                continue;
             }
             Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
             if (matcher.matches() && matcher.group(2).length() % 2 == 1) {
@@ -852,12 +862,14 @@ public class SpelShell implements Shell {
         return sw.toString();
     }
 
-    private static Supplier<String> stringExprReader(String script) {
-        return SpelShell.exprReader(new BufferedReader(new StringReader(script)));
+    private static Supplier<String> stringExprReader(String script, Function<String, Boolean> isCommentLine) {
+        return SpelShell.exprReader(new BufferedReader(new StringReader(script)), isCommentLine);
     }
 
-    private static Supplier<String> fileExprReader(Path path, Charset cs) throws IOException {
-        return SpelShell.exprReader(new BufferedReader(new FileReader(path.toFile(), cs)));
+    private static Supplier<String> fileExprReader(
+        Path path, Charset cs, Function<String, Boolean> isCommentLine
+    ) throws IOException {
+        return SpelShell.exprReader(new BufferedReader(new FileReader(path.toFile(), cs)), isCommentLine);
     }
 
     private void printPaths(List<Path> absPaths) throws IOException {

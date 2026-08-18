@@ -132,6 +132,8 @@ public interface Shell {
 
     void setPrompt(String prompt);
 
+    void setIsCommentLine(Function<String, Boolean> isCommentLine);
+
     void setPrintEvalResultLength(int printEvalResultLength);
 
     void setExprHistoryFile(File commandHistoryFile);

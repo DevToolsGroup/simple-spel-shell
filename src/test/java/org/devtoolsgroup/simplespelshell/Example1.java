@@ -33,7 +33,10 @@ import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
 
 public class Example1 {
     static void main() {
-        new MainShell(Path.of(new File("target").exists() ? "target" : "."));
+        new MainShell(
+            Path.of(new File("target").exists() ? "target" : "."),
+            Main.terminalLineReader()
+        );
     }
 
     public static class MainShell extends SpelShell {
@@ -41,10 +44,10 @@ public class Example1 {
         private final Path initialDir;
         private final Supplier<String> terminalLineReader;
 
-        public MainShell(Path initialDir) {
+        public MainShell(Path initialDir, Supplier<String> terminalLineReader) {
             super(initialDir);
             this.initialDir = initialDir;
-            this.terminalLineReader = Main.terminalLineReader();
+            this.terminalLineReader = terminalLineReader;
             setPrompt("[main menu] SpEL> ");
             while (true) {
                 try {
