@@ -78,6 +78,12 @@ public class SpelShell implements Shell {
     private static final Pattern SET_VAR_PAT = pat("^\\s*(%s)\\s*=(.+)$".formatted(IDENTIFIER_PAT));
     private static final Pattern ZERO_ARG_METHOD_PAT = pat("^\\s*(%s)\\s*$".formatted(IDENTIFIER_PAT));
     private static final Pattern ONE_ARG_METHOD_PAT = pat("^\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT));
+    private static final Pattern SET_VAR_EQ_ZERO_ARG_METHOD_PAT = pat(
+        "^\\s*(%s)\\s*=\\s*(%s)\\s*$".formatted(IDENTIFIER_PAT, IDENTIFIER_PAT)
+    );
+    private static final Pattern SET_VAR_EQ_ONE_ARG_METHOD_PAT = pat(
+        "^\\s*(%s)\\s*=\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT, IDENTIFIER_PAT)
+    );
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)(\\\\+)\\s*$");
     private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
         "(?<=[a-z])(?=[A-Z])" +
@@ -647,17 +653,28 @@ public class SpelShell implements Shell {
         if (expr == null) {
             return null;
         }
-        Matcher matcher = SET_VAR_PAT.matcher(expr);
+        Matcher matcher;
+        matcher = SET_VAR_EQ_ONE_ARG_METHOD_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "var('%s',%s(%s))".formatted(
+                matcher.group(1), findByPattern(matcher.group(2), oneArgMethods), matcher.group(3)
+            );
+        }
+        matcher = SET_VAR_EQ_ZERO_ARG_METHOD_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "var('%s',%s())".formatted(matcher.group(1), findByPattern(matcher.group(2), zeroArgMethods));
+        }
+        matcher = SET_VAR_PAT.matcher(expr);
         if (matcher.matches()) {
             return "var('%s',%s)".formatted(matcher.group(1), matcher.group(2));
-        }
-        matcher = ZERO_ARG_METHOD_PAT.matcher(expr);
-        if (matcher.matches()) {
-            return "%s()".formatted(findByPattern(matcher.group(1), zeroArgMethods));
         }
         matcher = ONE_ARG_METHOD_PAT.matcher(expr);
         if (matcher.matches()) {
             return "%s(%s)".formatted(findByPattern(matcher.group(1), oneArgMethods), matcher.group(2));
+        }
+        matcher = ZERO_ARG_METHOD_PAT.matcher(expr);
+        if (matcher.matches()) {
+            return "%s()".formatted(findByPattern(matcher.group(1), zeroArgMethods));
         }
         return expr;
     }
