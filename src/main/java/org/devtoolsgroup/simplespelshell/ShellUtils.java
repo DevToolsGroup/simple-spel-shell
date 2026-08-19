@@ -60,7 +60,7 @@ public class ShellUtils {
     private static final Pattern SET_VAR_EQ_ONE_ARG_METHOD_PAT = pat(
         "^\\s*(%s)\\s*=\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT, IDENTIFIER_PAT)
     );
-    private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)(\\\\+)\\s*$");
+    private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)\\\\\\s*$");
     private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
         "(?<=[a-z])(?=[A-Z])" +
             "|(?<=[^_])(?=_)|(?<=_)(?=[^_])" +
@@ -223,7 +223,7 @@ public class ShellUtils {
                 continue;
             }
             Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
-            if (matcher.matches() && matcher.group(2).length() % 2 == 1) {
+            if (matcher.matches()) {
                 sb.append(matcher.group(1)).append(" ");
             } else {
                 sb.append(line);
