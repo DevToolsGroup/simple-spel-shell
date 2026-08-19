@@ -51,6 +51,13 @@ public class ConsoleImpl implements Console {
         };
     }
 
+    public ConsoleImpl(Consumer<String> print, Supplier<String> read) {
+        this.print = print;
+        this.println = str -> print.accept(str + "\n");
+        this.printf = (format, args) -> print.accept(String.format(format, args));
+        this.read = read;
+    }
+
     @Override
     public void print(String text) {
         print.accept(text);

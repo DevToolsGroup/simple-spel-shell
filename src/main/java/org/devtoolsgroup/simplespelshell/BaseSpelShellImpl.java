@@ -284,6 +284,49 @@ public class BaseSpelShellImpl implements BaseSpelShell {
             .forEach(console::println);
     }
 
+    @Order(-100)
+    @Override
+    public void print(Object obj) {
+        console.print(String.valueOf(obj));
+    }
+
+    @Order(-100)
+    @Override
+    public void println(Object obj) {
+        console.println(String.valueOf(obj));
+    }
+
+    @Order(-100)
+    @Override
+    public void printf(String format, Object... args) {
+        console.printf(format, args);
+    }
+
+    @Order(-100)
+    @Override
+    public String format(String format, Object... args) {
+        return String.format(format, args);
+    }
+
+    @Order(-100)
+    @Override
+    public String prompt(String prompt) {
+        console.print(prompt);
+        return console.read();
+    }
+
+    @Order(-100)
+    @Override
+    public void exn(String msg) {
+        throw new ShellException(msg);
+    }
+
+    @Order(-100)
+    @Override
+    public void exnf(String format, Object... args) {
+        throw new ShellException(format(format, args));
+    }
+
     protected Object getRootObject() {
         return this;
     }

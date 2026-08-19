@@ -70,4 +70,18 @@ public interface BaseSpelShell {
     void hist();
 
     void hist(String filter);
+
+    void print(Object obj);
+
+    void println(Object obj);
+
+    void printf(String format, Object... args);
+
+    String format(String format, Object... args);
+
+    String prompt(String prompt);
+
+    void exn(String msg);
+
+    void exnf(String format, Object... args);
 }

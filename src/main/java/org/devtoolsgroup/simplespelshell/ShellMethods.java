@@ -31,20 +31,6 @@ import java.util.List;
 
 public interface ShellMethods {
 
-    void print(Object obj);
-
-    void println(Object obj);
-
-    void printf(String format, Object... args);
-
-    String format(String format, Object... args);
-
-    String prompt(String prompt);
-
-    void exn(String msg);
-
-    void exnf(String format, Object... args);
-
     Path cd(Path path);
 
     Path cd();
