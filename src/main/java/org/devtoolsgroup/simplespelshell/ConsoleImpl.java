@@ -24,23 +24,42 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
-public interface Repl {
+public class ConsoleImpl implements Console {
+    private final Consumer<String> print;
+    private final Consumer<String> println;
+    private final Supplier<String> read;
 
-    void run();
+    public ConsoleImpl() {
+        print = System.out::print;
+        println = System.out::println;
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
+        read = () -> {
+            try {
+                return bufferedReader.readLine();
+            } catch (IOException e) {
+                throw new ShellException(e);
+            }
+        };
+    }
 
-    void setInput(Supplier<String> input);
+    @Override
+    public void print(String text) {
+        print.accept(text);
+    }
 
-    void setEvaluator(Function<String, Object> evaluator);
+    @Override
+    public void println(String text) {
+        println.accept(text);
+    }
 
-    void setResultPrinter(Function<Object, String> resultPrinter);
-
-    void setOutput(Consumer<String> output);
-
-    void setErrorOutput(Consumer<Exception> errorOutput);
-
-    void setStopOnException(Class<Exception> stopOnException);
+    @Override
+    public String read() {
+        return read.get();
+    }
 }

@@ -35,6 +35,11 @@ public class WorkDirectoryImpl implements WorkDirectory {
     private Path curDir;
     private Consumer<Path> currentDirectoryValidator;
 
+    public WorkDirectoryImpl(Path curDir) {
+        this.curDir = curDir.toAbsolutePath().normalize();
+        changeCurrentDir(curDir);
+    }
+
     @Override
     public void changeCurrentDir(Path path) {
         if (path.toString().isBlank()) {

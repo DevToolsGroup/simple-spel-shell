@@ -190,7 +190,7 @@ public class ShellUtils {
         }
     }
 
-    private static String getStackTrace(Throwable th) {
+    public static String getStackTrace(Throwable th) {
         StringWriter sw = new StringWriter();
         th.printStackTrace(new PrintWriter(sw));
         return sw.toString();

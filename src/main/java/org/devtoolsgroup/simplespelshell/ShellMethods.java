@@ -28,13 +28,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 
 public interface ShellMethods {
-
-    Object runScript(String script);
-
-    Object runScript(Path path);
 
     void print(Object obj);
 
@@ -69,8 +64,6 @@ public interface ShellMethods {
     Object var(String name);
 
     void var();
-
-    Map<String, Object> getAllVariables();
 
     Path cd(Path path);
 

@@ -24,28 +24,12 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.nio.file.Path;
-import java.util.function.Consumer;
+public interface Console {
+    String read();
 
-public interface Shell2 {
+    void print(String text);
 
-    Object runRepl();
-
-    Object runScript(String script);
-
-    Object runScript(Path path);
-
-    Object eval(Object tmpVar, String script);
-
-    ReplConfig getReplConfig();
-
-    ReplConfig getReplConfigForScript();
-
-    void setOnExit(Consumer<Object> onExit);
-
-    SpelEvaluator getSpelEvaluator();
-
-    WorkDirectory getWorkDirectory();
-
-
+    default void println(String text) {
+        print(text + "\n");
+    }
 }
