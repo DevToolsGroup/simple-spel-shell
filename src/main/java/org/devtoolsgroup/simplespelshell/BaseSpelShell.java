@@ -24,6 +24,8 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.springframework.core.annotation.Order;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
@@ -106,11 +108,13 @@ public class BaseSpelShell implements BaseShell {
         replConfigForScript.setStopOnException(Exception.class);
     }
 
+    @Order(-1000)
     @Override
     public Object runRepl() {
         return runRepl(replConfig, ShellUtils.expressionReader(console::read, replConfig.getIsCommentLine()));
     }
 
+    @Order(-100)
     @Override
     public Object runScript(String script) {
         return runRepl(
@@ -119,6 +123,7 @@ public class BaseSpelShell implements BaseShell {
         );
     }
 
+    @Order(-100)
     @Override
     public Object runScript(Path path) {
         return runRepl(
@@ -129,47 +134,56 @@ public class BaseSpelShell implements BaseShell {
         );
     }
 
+    @Order(-100)
     @Override
     public Object eval(Object arg, String script) {
         spelEvaluator.addVariable("_", arg);
         return runScript(script);
     }
 
+    @Order(-1000)
     @Override
     public Console getConsole() {
         return console;
     }
 
+    @Order(-1000)
     @Override
     public void setConsole(Console console) {
         this.console = console;
     }
 
+    @Order(-1000)
     @Override
     public ReplConfig getReplConfig() {
         return replConfig;
     }
 
+    @Order(-1000)
     @Override
     public ReplConfig getReplConfigForScript() {
         return replConfigForScript;
     }
 
+    @Order(-1000)
     @Override
     public void setOnExit(Consumer<Object> onExit) {
         this.onExit = onExit;
     }
 
+    @Order(-1000)
     @Override
     public SpelEvaluator getSpelEvaluator() {
         return spelEvaluator;
     }
 
+    @Order(-1000)
     @Override
     public WorkDirectory getWorkDirectory() {
         return workDirectory;
     }
 
+    @Order(-100)
     @Override
     public void exit(Object result) {
         if (onExit != null) {
@@ -177,11 +191,13 @@ public class BaseSpelShell implements BaseShell {
         }
     }
 
+    @Order(-100)
     @Override
     public void exit() {
         exit(null);
     }
 
+    @Order(-100)
     @Override
     public Object var(String name, Object value) {
         if (name == null) {
@@ -191,11 +207,13 @@ public class BaseSpelShell implements BaseShell {
         return value;
     }
 
+    @Order(-100)
     @Override
     public Object var(String name) {
         return spelEvaluator.getVariable(name);
     }
 
+    @Order(-100)
     @Override
     public void var() {
         spelEvaluator.getAllVariables().entrySet().stream()
@@ -209,12 +227,13 @@ public class BaseSpelShell implements BaseShell {
             );
     }
 
+    @Order(-100)
     @Override
-    public void help(String filter) {
-        AtomicInteger prevOrder = new AtomicInteger(Integer.MIN_VALUE);
+    public void help(String pattern) {
+        AtomicInteger prevOrder = new AtomicInteger(Integer.MAX_VALUE);
         Function<Method, String> methodNameGetter = Method::getName;
         getExposedMethods()
-            .filter(method -> matches(method.getName(), filter))
+            .filter(method -> matches(method.getName(), pattern))
             .sorted(Comparator.comparing(ShellUtils::getSortOrder).thenComparing(methodNameGetter))
             .map(method -> {
                 String params = Arrays.stream(method.getParameters())
@@ -235,11 +254,13 @@ public class BaseSpelShell implements BaseShell {
             .forEach(console::println);
     }
 
+    @Order(-100)
     @Override
     public void help() {
         help("");
     }
 
+    @Order(-100)
     @Override
     public void hist(int num) {
         List<String> allHist = loadHistory(replConfig.getExprHistoryFile());
@@ -248,14 +269,16 @@ public class BaseSpelShell implements BaseShell {
         }
     }
 
+    @Order(-100)
     @Override
     public void hist() {
         hist(100);
     }
 
+    @Order(-100)
     @Override
-    public void hist(String filter) {
-        String finalFilter = filter.trim().toLowerCase();
+    public void hist(String substring) {
+        String finalFilter = substring.trim().toLowerCase();
         loadHistory(replConfig.getExprHistoryFile()).stream()
             .filter(line -> line.toLowerCase().contains(finalFilter))
             .forEach(console::println);
