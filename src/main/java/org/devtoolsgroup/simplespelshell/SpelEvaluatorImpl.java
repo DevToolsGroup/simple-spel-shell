@@ -31,6 +31,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class SpelEvaluatorImpl implements SpelEvaluator {
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
+    private List<Converter<?, ?>> typeConverters = List.of();
     private StandardEvaluationContext spelCtx = new StandardEvaluationContext();
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
@@ -47,7 +49,13 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     }
 
     @Override
+    public List<Converter<?, ?>> getTypeConverters() {
+        return Collections.unmodifiableList(typeConverters);
+    }
+
+    @Override
     public void setTypeConverters(List<Converter<?, ?>> typeConverters) {
+        this.typeConverters = typeConverters;
         DefaultConversionService defaultConversionService = new DefaultConversionService();
         typeConverters.forEach(defaultConversionService::addConverter);
         spelCtx.setTypeConverter(new StandardTypeConverter(defaultConversionService));

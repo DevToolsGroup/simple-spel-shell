@@ -26,17 +26,42 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.function.Consumer;
+import java.util.List;
 
-public interface WorkDirectory {
+public interface FileSystemAwareSpelShell {
 
-    void changeCurrentDir(Path path);
+    WorkingDirectory getWorkingDirectory();
 
-    void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> validator);
+    Object runScript(Path path);
 
-    Path getCurDirAbsolutePath();
+    Path cd(Path path);
+
+    Path cd();
+
+    void pwd();
 
     File getFile(Path path);
 
     void write(Path path, String text);
+
+    String read(Path path);
+
+    void mkdir(boolean autoCd, Path path);
+
+    void mkdir(Path path);
+
+    void ll(Path path);
+
+    void ll();
+
+    List<File> findFilesByName(String pattern);
+
+    void listFiles(String pattern);
+
+    void listFiles();
+
+    void listDirs(String pattern);
+
+    void listDirs();
+
 }

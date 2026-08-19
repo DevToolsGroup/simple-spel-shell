@@ -34,6 +34,8 @@ public interface SpelEvaluator {
 
     Object evaluate(Object rootObject, String expression);
 
+    List<Converter<?, ?>> getTypeConverters();
+
     void setTypeConverters(List<Converter<?, ?>> typeConverters);
 
     void setOperatorOverloader(OperatorOverloader operatorOverloader);

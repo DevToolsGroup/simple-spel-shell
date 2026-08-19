@@ -28,7 +28,6 @@ import org.springframework.core.annotation.Order;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -47,40 +46,23 @@ import static org.devtoolsgroup.simplespelshell.ShellUtils.loadHistory;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 
 public class BaseSpelShellImpl implements BaseSpelShell {
-    private final Set<String> methodsToHide;
-    private final List<String> zeroArgMethods;
-    private final List<String> oneArgMethods;
+    protected final Set<String> methodsToHide;
+    protected final List<String> zeroArgMethods;
+    protected final List<String> oneArgMethods;
 
     private final SpelEvaluator spelEvaluator;
-    private Object lastEvalResult;
-    private final WorkDirectory workDirectory;
-    private Consumer<Object> onExit = _ -> System.exit(1);
+    protected Object lastEvalResult;
+    protected Consumer<Object> onExit = _ -> System.exit(1);
 
     private Console console;
     private final ReplConfig replConfig;
     private final ReplConfig replConfigForScript;
 
     public BaseSpelShellImpl() {
-        this(Path.of(""));
-    }
-
-    public BaseSpelShellImpl(Path initDir) {
-        this(initDir, new ConsoleImpl());
+        this(new ConsoleImpl());
     }
 
     public BaseSpelShellImpl(Console console) {
-        this(Path.of(""), console);
-    }
-
-    public BaseSpelShellImpl(Path initDir, Console console) {
-        Path absInitDir = initDir.toAbsolutePath().normalize();
-        workDirectory = new WorkDirectoryImpl(absInitDir);
-        workDirectory.setCurrentDirectoryValidator(absInitDir, path -> {
-            if (!ShellUtils.isParentChild(absInitDir, path)) {
-                throw new ShellException(false, "Cannot work outside of " + absInitDir);
-            }
-        });
-
         this.console = console;
 
         methodsToHide = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
@@ -125,17 +107,6 @@ public class BaseSpelShellImpl implements BaseSpelShell {
 
     @Order(-100)
     @Override
-    public Object runScript(Path path) {
-        return runRepl(
-            replConfigForScript,
-            ShellUtils.expressionReader(
-                ShellUtils.lineReader(workDirectory.getFile(path)), replConfig.getIsCommentLine()
-            )
-        );
-    }
-
-    @Order(-100)
-    @Override
     public Object eval(Object arg, String script) {
         spelEvaluator.addVariable("_", arg);
         return runScript(script);
@@ -175,12 +146,6 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     @Override
     public SpelEvaluator getSpelEvaluator() {
         return spelEvaluator;
-    }
-
-    @Order(-1000)
-    @Override
-    public WorkDirectory getWorkDirectory() {
-        return workDirectory;
     }
 
     @Order(-100)
@@ -344,7 +309,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         return !isMethodToHide(method);
     }
 
-    private Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
+    protected Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
         while (true) {
             Supplier<String> prompt = config.getPrompt();
             Function<String, String> expressionInterceptor = config.getExpressionInterceptor();

@@ -31,11 +31,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-public class WorkDirectoryImpl implements WorkDirectory {
+public class WorkingDirectoryImpl implements WorkingDirectory {
     private Path curDir;
     private Consumer<Path> currentDirectoryValidator;
 
-    public WorkDirectoryImpl(Path curDir) {
+    public WorkingDirectoryImpl(Path curDir) {
         this.curDir = curDir.toAbsolutePath().normalize();
         changeCurrentDir(curDir);
     }

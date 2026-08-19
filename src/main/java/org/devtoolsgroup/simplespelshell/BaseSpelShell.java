@@ -24,7 +24,6 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.nio.file.Path;
 import java.util.function.Consumer;
 
 public interface BaseSpelShell {
@@ -32,8 +31,6 @@ public interface BaseSpelShell {
     Object runRepl();
 
     Object runScript(String script);
-
-    Object runScript(Path path);
 
     Object eval(Object arg, String script);
 
@@ -48,8 +45,6 @@ public interface BaseSpelShell {
     void setOnExit(Consumer<Object> onExit);
 
     SpelEvaluator getSpelEvaluator();
-
-    WorkDirectory getWorkDirectory();
 
     void exit(Object result);
 

@@ -25,40 +25,18 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.function.Consumer;
 
-public interface ShellMethods {
+public interface WorkingDirectory {
 
-    Path cd(Path path);
+    void changeCurrentDir(Path path);
 
-    Path cd();
+    void setCurrentDirectoryValidator(Path newCurDir, Consumer<Path> validator);
 
-    void pwd();
+    Path getCurDirAbsolutePath();
 
     File getFile(Path path);
 
-    void write(Path path, String text) throws IOException;
-
-    String read(Path path) throws IOException;
-
-    void mkdir(boolean autoCd, Path path);
-
-    void mkdir(Path path);
-
-    void ll(Path path) throws IOException;
-
-    List<File> findFilesByName(String pattern) throws IOException;
-
-    void listFiles(String pattern) throws IOException;
-
-    void listFiles() throws IOException;
-
-    void listDirs(String pattern) throws IOException;
-
-    void listDirs() throws IOException;
-
-    void ll() throws IOException;
-
+    void write(Path path, String text);
 }
