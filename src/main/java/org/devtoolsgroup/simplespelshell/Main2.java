@@ -27,7 +27,7 @@ package org.devtoolsgroup.simplespelshell;
 import java.io.File;
 import java.nio.file.Path;
 
-public class Main2 extends BaseSpelShell {
+public class Main2 extends BaseSpelShellImpl {
 
     public Main2(String initDir) {
         super(Path.of(initDir));
