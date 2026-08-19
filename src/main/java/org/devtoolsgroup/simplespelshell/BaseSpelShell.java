@@ -24,7 +24,6 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
@@ -42,6 +41,7 @@ import java.util.stream.Stream;
 
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getStackTrace;
+import static org.devtoolsgroup.simplespelshell.ShellUtils.loadHistory;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 
 public class BaseSpelShell implements BaseShell {
@@ -54,6 +54,7 @@ public class BaseSpelShell implements BaseShell {
     private final WorkDirectory workDirectory;
     private Consumer<Object> onExit = _ -> System.exit(1);
 
+    private Console console;
     private final ReplConfig replConfig;
     private final ReplConfig replConfigForScript;
 
@@ -70,12 +71,6 @@ public class BaseSpelShell implements BaseShell {
     }
 
     public BaseSpelShell(Path initDir, Console console) {
-        methodsToHide = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
-        zeroArgMethods = getMethodsWithNumOfArgs(0);
-        oneArgMethods = getMethodsWithNumOfArgs(1);
-
-        spelEvaluator = new SpelEvaluatorImpl();
-
         Path absInitDir = initDir.toAbsolutePath().normalize();
         workDirectory = new WorkDirectoryImpl(absInitDir);
         workDirectory.setCurrentDirectoryValidator(absInitDir, path -> {
@@ -84,8 +79,15 @@ public class BaseSpelShell implements BaseShell {
             }
         });
 
+        this.console = console;
+
+        methodsToHide = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
+        zeroArgMethods = getMethodsWithNumOfArgs(0);
+        oneArgMethods = getMethodsWithNumOfArgs(1);
+
+        spelEvaluator = new SpelEvaluatorImpl();
+
         replConfig = new ReplConfig();
-        replConfig.setConsole(console);
         replConfig.setPrompt(() -> "SpEL> ");
         replConfig.setExprHistoryFile(null);
         replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfig));
@@ -94,9 +96,7 @@ public class BaseSpelShell implements BaseShell {
         replConfig.setPrintEvalResultLength(100);
         replConfig.setStopOnException(ShellExitException.class);
 
-
         replConfigForScript = new ReplConfig();
-        replConfigForScript.setConsole(console);
         replConfigForScript.setPrompt(null);
         replConfigForScript.setExprHistoryFile(null);
         replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfigForScript));
@@ -104,15 +104,10 @@ public class BaseSpelShell implements BaseShell {
         replConfigForScript.setPrintExpressionBeforeEval(false);
         replConfigForScript.setPrintEvalResultLength(0);
         replConfigForScript.setStopOnException(Exception.class);
-
     }
 
     @Override
     public Object runRepl() {
-        Console console = replConfig.getConsole();
-        if (console == null) {
-            throw new ShellException("Cannot run REPL without console.");
-        }
         return runRepl(replConfig, ShellUtils.expressionReader(console::read, replConfig.getIsCommentLine()));
     }
 
@@ -135,9 +130,19 @@ public class BaseSpelShell implements BaseShell {
     }
 
     @Override
-    public Object eval(Object tmpVar, String script) {
-        spelEvaluator.addVariable("_", tmpVar);
+    public Object eval(Object arg, String script) {
+        spelEvaluator.addVariable("_", arg);
         return runScript(script);
+    }
+
+    @Override
+    public Console getConsole() {
+        return console;
+    }
+
+    @Override
+    public void setConsole(Console console) {
+        this.console = console;
     }
 
     @Override
@@ -196,7 +201,7 @@ public class BaseSpelShell implements BaseShell {
         spelEvaluator.getAllVariables().entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .forEach(entry ->
-                getReplConsole().printf(
+                console.printf(
                     "%s: %s\n",
                     entry.getKey(),
                     entry.getValue() == null ? "null" : entry.getValue().getClass().getName()
@@ -206,15 +211,14 @@ public class BaseSpelShell implements BaseShell {
 
     @Override
     public void help(String filter) {
-        Console console = getReplConsole();
         AtomicInteger prevOrder = new AtomicInteger(Integer.MIN_VALUE);
         Function<Method, String> methodNameGetter = Method::getName;
         getExposedMethods()
             .filter(method -> matches(method.getName(), filter))
-            .sorted(Comparator.comparing(SpelShell::getSortOrder).thenComparing(methodNameGetter))
+            .sorted(Comparator.comparing(ShellUtils::getSortOrder).thenComparing(methodNameGetter))
             .map(method -> {
-                String params = Arrays.stream(method.getParameterTypes())
-                    .map(Class::getName)
+                String params = Arrays.stream(method.getParameters())
+                    .map(param -> "%s: %s".formatted(param.getName(), param.getType().getName()))
                     .collect(Collectors.joining(", "));
                 String returnType = method.getReturnType().getName();
                 String name = method.getName();
@@ -233,22 +237,28 @@ public class BaseSpelShell implements BaseShell {
 
     @Override
     public void help() {
-
+        help("");
     }
 
     @Override
-    public void hist(int num) throws IOException {
-
+    public void hist(int num) {
+        List<String> allHist = loadHistory(replConfig.getExprHistoryFile());
+        for (int i = Math.max(0, allHist.size() - num); i < allHist.size(); i++) {
+            console.println(allHist.get(i));
+        }
     }
 
     @Override
-    public void hist() throws IOException {
-
+    public void hist() {
+        hist(100);
     }
 
     @Override
-    public void hist(String filter) throws IOException {
-
+    public void hist(String filter) {
+        String finalFilter = filter.trim().toLowerCase();
+        loadHistory(replConfig.getExprHistoryFile()).stream()
+            .filter(line -> line.toLowerCase().contains(finalFilter))
+            .forEach(console::println);
     }
 
     protected Object getRootObject() {
@@ -270,14 +280,13 @@ public class BaseSpelShell implements BaseShell {
 
     private Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
         while (true) {
-            Console console = config.getConsole();
             Supplier<String> prompt = config.getPrompt();
             Function<String, String> expressionInterceptor = config.getExpressionInterceptor();
             boolean printExpressionBeforeEval = config.isPrintExpressionBeforeEval();
             int printEvalResultLength = config.getPrintEvalResultLength();
             Class<? extends Exception> stopOnException = config.getStopOnException();
             try {
-                if (console != null && prompt != null) {
+                if (prompt != null) {
                     console.print(prompt.get());
                 }
                 String expr = expressionReader.readExpression();
@@ -290,11 +299,11 @@ public class BaseSpelShell implements BaseShell {
                 if (expr.isBlank()) {
                     continue;
                 }
-                if (printExpressionBeforeEval && console != null) {
+                if (printExpressionBeforeEval) {
                     console.println(expr);
                 }
                 Object res = spelEvaluator.evaluate(getRootObject(), expr);
-                if (printEvalResultLength > 0 && res != null && console != null) {
+                if (printEvalResultLength > 0 && res != null) {
                     String resStr = res.toString();
                     if (resStr.length() <= printEvalResultLength) {
                         console.println(resStr);
@@ -305,9 +314,6 @@ public class BaseSpelShell implements BaseShell {
             } catch (Exception ex) {
                 if (stopOnException != null && stopOnException.isAssignableFrom(ex.getClass())) {
                     throw ex;
-                }
-                if (console == null) {
-                    throw new ShellException("Need to print error, but no console set.", ex);
                 }
                 if (ex.getMessage() != null) {
                     console.println(ex.getMessage());
@@ -335,13 +341,5 @@ public class BaseSpelShell implements BaseShell {
             .map(Method::getName)
             .distinct()
             .toList();
-    }
-
-    private Console getReplConsole() {
-        Console console = replConfig.getConsole();
-        if (console == null) {
-            throw new ShellException("REPL console is not set.");
-        }
-        return console;
     }
 }

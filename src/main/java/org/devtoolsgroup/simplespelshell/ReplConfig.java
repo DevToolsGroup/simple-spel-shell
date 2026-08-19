@@ -30,7 +30,6 @@ import java.util.function.Supplier;
 
 public class ReplConfig {
 
-    private Console console;
     private Supplier<String> prompt;
     private Function<String, String> expressionInterceptor;
     private Function<String, Boolean> isCommentLine;
@@ -38,14 +37,6 @@ public class ReplConfig {
     private int printEvalResultLength;
     private File exprHistoryFile;
     private Class<? extends Exception> stopOnException;
-
-    public Console getConsole() {
-        return console;
-    }
-
-    public void setConsole(Console console) {
-        this.console = console;
-    }
 
     public Supplier<String> getPrompt() {
         return prompt;

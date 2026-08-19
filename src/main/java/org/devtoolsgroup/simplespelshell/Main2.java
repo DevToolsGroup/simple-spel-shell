@@ -24,50 +24,24 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.File;
 import java.nio.file.Path;
-import java.util.function.Consumer;
 
-public interface BaseShell {
+public class Main2 extends BaseSpelShell {
 
-    Object runRepl();
+    public Main2(String initDir) {
+        super(Path.of(initDir));
+    }
 
-    Object runScript(String script);
+    static void main(String[] args) {
+        String initDir = new File("target").exists() ? "target/" : "./";
+        Main2 shell = new Main2(initDir);
+        shell.runRepl();
+    }
 
-    Object runScript(Path path);
-
-    Object eval(Object arg, String script);
-
-    Console getConsole();
-
-    void setConsole(Console console);
-
-    ReplConfig getReplConfig();
-
-    ReplConfig getReplConfigForScript();
-
-    void setOnExit(Consumer<Object> onExit);
-
-    SpelEvaluator getSpelEvaluator();
-
-    WorkDirectory getWorkDirectory();
-
-    void exit(Object result);
-
-    void exit();
-
-    Object var(String name, Object value);
-
-    Object var(String name);
-
-    void var();
-
-    void help(String filter);
-
-    void help();
-
-    void hist(int num);
-
-    void hist();
-
-    void hist(String filter);
+    public void sayHi() {
+        Console console = this.getConsole();
+        console.print("What is your name? ");
+        console.printf("Hi, %s!\n", console.read());
+    }
 }
