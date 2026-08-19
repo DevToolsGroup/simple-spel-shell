@@ -26,42 +26,50 @@ package org.devtoolsgroup.simplespelshell;
 
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 import org.jline.widget.AutopairWidgets;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.function.Supplier;
 
-public class Main extends SpelShell {
+public class Main extends FileSystemAwareSpelShellImpl {
+
+    static void main(String[] args) {
+        File initDir = new File(new File("target").exists() ? "target" : ".");
+        Main shell = new Main(initDir.getAbsolutePath());
+
+        shell.runScript(Path.of("../src/test/resources/init_script.txt"));
+
+        shell.getReplConfig().setExprHistoryFile(new File(initDir, "history.log"));
+        shell.runRepl();
+    }
 
     public Main(String initDir) {
-        super(Path.of(initDir));
+        super(Path.of(initDir), makeConsole());
     }
 
-    static void main(String[] args) throws IOException {
-        String initDir = new File("target").exists() ? "target/" : "./";
-        Main shell = new Main(initDir);
-
-        shell.setPrompt("");
-        shell.setPrintEvalResultLength(0);
-        shell.runScript(Path.of(initDir, "../src/test/resources/init_script.txt"));
-
-        shell.setPrompt("SpEL> ");
-        shell.setPrintEvalResultLength(100);
-        shell.setExprHistoryFile(new File(initDir + "history.log"));
-        shell.runShell(terminalLineReader());
-    }
-
-    public void sayHi() throws IOException {
+    public void sayHi() {
         String name = prompt("What is your name? ");
         print(format("Hi, %s!\n", name));
     }
 
-    public static Supplier<String> terminalLineReader() {
-        LineReader reader = LineReaderBuilder.builder().build();
-        AutopairWidgets autopairWidgets = new AutopairWidgets(reader, true);
-        autopairWidgets.enable();
-        return reader::readLine;
+    public static Console makeConsole() {
+        try {
+            Terminal terminal = TerminalBuilder.builder().system(true).build();
+            LineReader reader = LineReaderBuilder.builder().build();
+            AutopairWidgets autopairWidgets = new AutopairWidgets(reader, true);
+            autopairWidgets.enable();
+            return new ConsoleImpl(
+                str -> {
+                    terminal.writer().print(str);
+                    terminal.flush();
+                },
+                reader::readLine
+            );
+        } catch (IOException e) {
+            throw new ShellException(e);
+        }
     }
 }
