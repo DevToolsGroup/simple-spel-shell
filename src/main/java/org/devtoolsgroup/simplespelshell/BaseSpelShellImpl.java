@@ -56,8 +56,8 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     protected Consumer<Object> onExit = _ -> System.exit(1);
 
     private Console console;
-    private final ReplConfig replConfig;
-    private final ReplConfig replConfigForScript;
+    private ReplConfig replConfig;
+    private ReplConfig replConfigForScript;
 
     public BaseSpelShellImpl() {
         this(new ConsoleImpl());
@@ -146,8 +146,20 @@ public class BaseSpelShellImpl implements BaseSpelShell {
 
     @Order(-1000)
     @Override
+    public void setReplConfig(ReplConfig replConfig) {
+        this.replConfig = replConfig;
+    }
+
+    @Order(-1000)
+    @Override
     public ReplConfig getReplConfigForScript() {
         return replConfigForScript;
+    }
+
+    @Order(-1000)
+    @Override
+    public void setReplConfigForScript(ReplConfig replConfigForScript) {
+        this.replConfigForScript = replConfigForScript;
     }
 
     @Order(-1000)

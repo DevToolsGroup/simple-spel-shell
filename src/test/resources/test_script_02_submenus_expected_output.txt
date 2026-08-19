@@ -1,0 +1,91 @@
+[main menu] SpEL> he
+// evaluating: help()
+command1(): void
+command2(): void
+[main menu] SpEL> c1
+// evaluating: command1()
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> he
+// evaluating: help()
+calculate(): int
+setNumber1(number1: int): void
+setNumber2(number2: int): void
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> n1 19
+Cannot find a method by pattern 'n1'
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> n2 72
+Cannot find a method by pattern 'n2'
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> sum=calc
+Cannot find a method by pattern 'calc'
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> ex
+// evaluating: exit()
+-------------------------------
+Adding numbers
+number1=0
+number2=0
+[adder] SpEL> c2
+// evaluating: command2()
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> he
+// evaluating: help()
+calculate(): int
+setNumber1(number1: int): void
+setNumber2(number2: int): void
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> n1 #sum
+Cannot find a method by pattern 'n1'
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> n2 63
+Cannot find a method by pattern 'n2'
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> prod=calc
+Cannot find a method by pattern 'calc'
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> ex
+// evaluating: exit()
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> {#sum,#prod}
+// evaluating: {#sum,#prod}
+// result: [null, null]
+-------------------------------
+Multiplying numbers
+number1=0
+number2=0
+[multiplier] SpEL> ex
+// evaluating: exit()

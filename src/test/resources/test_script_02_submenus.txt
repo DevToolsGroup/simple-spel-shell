@@ -1,0 +1,15 @@
+he
+c1
+he
+n1 19
+n2 72
+sum=calc
+ex
+c2
+he
+n1 #sum
+n2 63
+prod=calc
+ex
+{#sum,#prod}
+ex

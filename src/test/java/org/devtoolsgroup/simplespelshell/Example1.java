@@ -24,33 +24,43 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.io.File;
+import org.springframework.core.annotation.Order;
+
 import java.lang.reflect.Method;
-import java.nio.file.Path;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 
 public class Example1 {
     static void main() {
-        new MainShell(Path.of(new File("target").exists() ? "target" : "."));
+        new MainShell();
     }
 
-    public static class MainShell extends FileSystemAwareSpelShellImpl {
+    public static class MainShell extends BaseSpelShellImpl {
         public static final String DELIMITER = "-------------------------------\n";
-        private final Path initialDir;
 
-        public MainShell(Path initialDir) {
-            super(initialDir);
-            this.initialDir = initialDir;
+        public MainShell() {
             getReplConfig().setPrompt(() -> "[main menu] SpEL> ");
+            setOnExit(_ -> {
+                throw new ShellExitException();
+            });
+        }
+
+        @Order(-1000)
+        @Override
+        public Object runRepl() {
             while (true) {
                 try {
-                    runRepl();
+                    super.runRepl();
                 } catch (ShellExitException ex) {
-                    //copy all variables from the child shell to the parent shell
-                    ((Map<String, Object>) ex.getResult()).forEach(this::var);
+                    if (ex.getResult() != null) {
+                        //copy all variables from the child shell to the parent shell
+                        ((Map<String, Object>) ex.getResult()).forEach(this::var);
+                    } else {
+                        return null;
+                    }
                 }
             }
         }
@@ -62,20 +72,29 @@ public class Example1 {
         }
 
         public void command1() {
-            new Cmd1Shell(initialDir, getSpelEvaluator().getAllVariables()).runRepl();
+            Cmd1Shell cmd1Shell = new Cmd1Shell(getSpelEvaluator().getAllVariables());
+            Supplier<String> origPrompt = cmd1Shell.getReplConfig().getPrompt();
+            cmd1Shell.setConsole(getConsole());
+            cmd1Shell.setReplConfig(getReplConfig());
+            cmd1Shell.getReplConfig().setPrompt(origPrompt);
+            cmd1Shell.runRepl();
         }
 
         public void command2() {
-            new Cmd2Shell(initialDir, getSpelEvaluator().getAllVariables()).runRepl();
+            Cmd2Shell cmd2Shell = new Cmd2Shell(getSpelEvaluator().getAllVariables());
+            Supplier<String> origPrompt = cmd2Shell.getReplConfig().getPrompt();
+            cmd2Shell.setConsole(getConsole());
+            cmd2Shell.setReplConfig(getReplConfig());
+            cmd2Shell.getReplConfig().setPrompt(origPrompt);
+            cmd2Shell.runRepl();
         }
     }
 
-    private static class Cmd1Shell extends FileSystemAwareSpelShellImpl {
+    private static class Cmd1Shell extends BaseSpelShellImpl {
         private int number1;
         private int number2;
 
-        public Cmd1Shell(Path initialDir, Map<String, Object> variables) {
-            super(initialDir);
+        public Cmd1Shell(Map<String, Object> variables) {
             variables.forEach(this::var);
             getReplConfig().setPrompt(() ->
                 DELIMITER +
@@ -115,12 +134,11 @@ public class Example1 {
         }
     }
 
-    private static class Cmd2Shell extends FileSystemAwareSpelShellImpl {
+    private static class Cmd2Shell extends BaseSpelShellImpl {
         private int number1;
         private int number2;
 
-        public Cmd2Shell(Path initialDir, Map<String, Object> variables) {
-            super(initialDir);
+        public Cmd2Shell(Map<String, Object> variables) {
             variables.forEach(this::var);
             getReplConfig().setPrompt(() ->
                 DELIMITER +

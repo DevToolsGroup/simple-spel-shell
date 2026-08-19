@@ -36,40 +36,60 @@ class SpelShellTest {
 
     @Test
     void test1() throws IOException {
-        testShell("test_script_01.txt", "test_script_01_expected_output.txt");
+        testShell(
+            new BaseSpelShellImpl(),
+            true,
+            "test_script_01.txt",
+            "test_script_01_expected_output.txt"
+        );
     }
 
-    private static void testShell(String scriptPath, String expectedOutputPath) throws IOException {
+    @Test
+    void test2_submenus() throws IOException {
+        testShell(
+            new Example1.MainShell(),
+            false,
+            "test_script_02_submenus.txt",
+            "test_script_02_submenus_expected_output.txt"
+        );
+    }
+
+    private static void testShell(
+        BaseSpelShell shell, boolean processComments,
+        String scriptPath, String expectedOutputPath
+    ) throws IOException {
         String script = readStringFromClasspath(scriptPath);
         LineReader scriptLineReader = ShellUtils.lineReader(script);
-        FileSystemAwareSpelShellImpl shell = new FileSystemAwareSpelShellImpl();
         TestConsole console = new TestConsole(scriptLineReader);
         shell.setConsole(console);
-        Function<String, Boolean> isCommentLineOrig = shell.getReplConfigForScript().getIsCommentLine();
-        shell.getReplConfigForScript().setIsCommentLine(line -> {
-            if (isCommentLineOrig.apply(line)) {
-                console.println(line);
-                return true;
-            }
-            return false;
-        });
-        Function<String, String> expressionInterceptorOrig = shell.getReplConfigForScript().getExpressionInterceptor();
-        shell.getReplConfigForScript().setExpressionInterceptor(expr -> {
+        if (processComments) {
+            shell.getReplConfig().setPrompt(null);
+            Function<String, Boolean> isCommentLineOrig = shell.getReplConfig().getIsCommentLine();
+            shell.getReplConfig().setIsCommentLine(line -> {
+                if (isCommentLineOrig.apply(line)) {
+                    console.println(line);
+                    return true;
+                }
+                return false;
+            });
+        }
+        Function<String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
+        shell.getReplConfig().setExpressionInterceptor(expr -> {
             if (expr != null && !expr.isBlank()) {
-                console.println("SpEL> " + expr);
+                console.println((processComments ? "SpEL> " : "") + expr);
             }
             return expressionInterceptorOrig.apply(expr);
         });
-        shell.getReplConfigForScript().setExprBeforeEvalInterceptor(expr ->
+        shell.getReplConfig().setExprBeforeEvalInterceptor(expr ->
             console.println("// evaluating: " + expr)
         );
-        shell.getReplConfigForScript().setEvalResultInterceptor(res -> {
+        shell.getReplConfig().setEvalResultInterceptor(res -> {
             if (res != null) {
                 console.println("// result: " + res);
             }
         });
 
-        shell.runScript(script);
+        shell.runRepl();
 
         Assertions.assertEquals(
             readStringFromClasspath(expectedOutputPath).trim(),

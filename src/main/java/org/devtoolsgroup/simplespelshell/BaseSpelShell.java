@@ -42,7 +42,11 @@ public interface BaseSpelShell {
 
     ReplConfig getReplConfig();
 
+    void setReplConfig(ReplConfig replConfig);
+
     ReplConfig getReplConfigForScript();
+
+    void setReplConfigForScript(ReplConfig replConfigForScript);
 
     void setOnExit(Consumer<Object> onExit);
 
