@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,9 +47,9 @@ import static org.devtoolsgroup.simplespelshell.ShellUtils.loadHistory;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 
 public class BaseSpelShellImpl implements BaseSpelShell {
-    protected final Set<String> methodsToHide;
-    protected final List<String> zeroArgMethods;
-    protected final List<String> oneArgMethods;
+    protected final Set<String> internalMethods;
+    protected final List<String> zeroArgMethodsForRewrite;
+    protected final List<String> oneArgMethodsForRewrite;
 
     private final SpelEvaluator spelEvaluator;
     protected Object lastEvalResult;
@@ -65,9 +66,9 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     public BaseSpelShellImpl(Console console) {
         this.console = console;
 
-        methodsToHide = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
-        zeroArgMethods = getMethodsWithNumOfArgs(0);
-        oneArgMethods = getMethodsWithNumOfArgs(1);
+        internalMethods = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
+        zeroArgMethodsForRewrite = getMethodsWithNumOfArgs(0, method -> !isMethodToHideInRewrite(method));
+        oneArgMethodsForRewrite = getMethodsWithNumOfArgs(1, method -> !isMethodToHideInRewrite(method));
 
         spelEvaluator = new SpelEvaluatorImpl();
 
@@ -182,6 +183,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     @Override
     public void var() {
         spelEvaluator.getAllVariables().entrySet().stream()
+            .filter(entry -> !"$".equals(entry.getKey()))
             .sorted(Map.Entry.comparingByKey())
             .forEach(entry ->
                 console.printf(
@@ -197,7 +199,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     public void help(String pattern) {
         AtomicInteger prevOrder = new AtomicInteger(Integer.MAX_VALUE);
         Function<Method, String> methodNameGetter = Method::getName;
-        getExposedMethods()
+        getExposedMethods(method -> !isMethodToHideInHelp(method))
             .filter(method -> matches(method.getName(), pattern))
             .sorted(Comparator.comparing(ShellUtils::getSortOrder).thenComparing(methodNameGetter))
             .map(method -> {
@@ -296,17 +298,17 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         return this;
     }
 
-    protected boolean isMethodToHide(Method method) {
-        return methodsToHide.contains(method.getName()) || getSortOrder(method) < -100;
+    protected boolean isMethodToHideInHelp(Method method) {
+        return internalMethods.contains(method.getName()) || getSortOrder(method) < -100;
     }
 
-    protected Stream<Method> getExposedMethods() {
+    protected boolean isMethodToHideInRewrite(Method method) {
+        return internalMethods.contains(method.getName());
+    }
+
+    protected Stream<Method> getExposedMethods(Predicate<Method> predicate) {
         return Arrays.stream(getRootObject().getClass().getMethods())
-            .filter(method -> !Modifier.isStatic(method.getModifiers()) && isMethodToShow(method));
-    }
-
-    private boolean isMethodToShow(Method method) {
-        return !isMethodToHide(method);
+            .filter(method -> !Modifier.isStatic(method.getModifiers()) && predicate.test(method));
     }
 
     protected Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
@@ -362,14 +364,13 @@ public class BaseSpelShellImpl implements BaseSpelShell {
             if (config.getExprHistoryFile() != null) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }
-            return ShellUtils.rewriteExpr(expr, zeroArgMethods, oneArgMethods);
+            return ShellUtils.rewriteExpr(expr, zeroArgMethodsForRewrite, oneArgMethodsForRewrite);
         };
     }
 
-    private List<String> getMethodsWithNumOfArgs(int numOfArgs) {
-        return getExposedMethods()
+    private List<String> getMethodsWithNumOfArgs(int numOfArgs, Predicate<Method> predicate) {
+        return getExposedMethods(predicate)
             .filter(m -> m.getGenericParameterTypes().length == numOfArgs)
-            .filter(this::isMethodToShow)
             .map(Method::getName)
             .distinct()
             .toList();

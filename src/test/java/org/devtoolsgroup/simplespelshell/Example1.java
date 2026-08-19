@@ -25,57 +25,59 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
+import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 
 public class Example1 {
     static void main() {
-        new MainShell(
-            Path.of(new File("target").exists() ? "target" : "."),
-            Main.terminalLineReader()
-        );
+        new MainShell(Path.of(new File("target").exists() ? "target" : "."));
     }
 
-    public static class MainShell extends SpelShell {
+    public static class MainShell extends FileSystemAwareSpelShellImpl {
         public static final String DELIMITER = "-------------------------------\n";
         private final Path initialDir;
-        private final Supplier<String> terminalLineReader;
 
-        public MainShell(Path initialDir, Supplier<String> terminalLineReader) {
+        public MainShell(Path initialDir) {
             super(initialDir);
             this.initialDir = initialDir;
-            this.terminalLineReader = terminalLineReader;
-            setPrompt("[main menu] SpEL> ");
+            getReplConfig().setPrompt(() -> "[main menu] SpEL> ");
             while (true) {
                 try {
-                    runShell(terminalLineReader);
-                } catch (SpelShellExitException ex) {
+                    runRepl();
+                } catch (ShellExitException ex) {
                     //copy all variables from the child shell to the parent shell
                     ((Map<String, Object>) ex.getResult()).forEach(this::var);
                 }
             }
         }
 
+        @Override
+        protected boolean isMethodToHideInHelp(Method method) {
+            //show only custom methods in help
+            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
+        }
+
         public void command1() {
-            new Cmd1Shell(initialDir, getAllVariables()).runShell(terminalLineReader);
+            new Cmd1Shell(initialDir, getSpelEvaluator().getAllVariables()).runRepl();
         }
 
         public void command2() {
-            new Cmd2Shell(initialDir, getAllVariables()).runShell(terminalLineReader);
+            new Cmd2Shell(initialDir, getSpelEvaluator().getAllVariables()).runRepl();
         }
     }
 
-    private static class Cmd1Shell extends SpelShell {
+    private static class Cmd1Shell extends FileSystemAwareSpelShellImpl {
         private int number1;
         private int number2;
 
         public Cmd1Shell(Path initialDir, Map<String, Object> variables) {
             super(initialDir);
             variables.forEach(this::var);
-            setPrompt(() ->
+            getReplConfig().setPrompt(() ->
                 DELIMITER +
                     "Adding numbers\n" +
                     "number1=" + number1 + "\n" +
@@ -84,8 +86,14 @@ public class Example1 {
             );
             setOnExit(_ -> {
                 //returning all variables to the parent shell
-                throw new SpelShellExitException(getAllVariables());
+                throw new ShellExitException(getSpelEvaluator().getAllVariables());
             });
+        }
+
+        @Override
+        protected boolean isMethodToHideInHelp(Method method) {
+            //show only custom methods in help
+            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
         }
 
         public void setNumber1(int number1) {
@@ -107,14 +115,14 @@ public class Example1 {
         }
     }
 
-    private static class Cmd2Shell extends SpelShell {
+    private static class Cmd2Shell extends FileSystemAwareSpelShellImpl {
         private int number1;
         private int number2;
 
         public Cmd2Shell(Path initialDir, Map<String, Object> variables) {
             super(initialDir);
             variables.forEach(this::var);
-            setPrompt(() ->
+            getReplConfig().setPrompt(() ->
                 DELIMITER +
                     "Multiplying numbers\n" +
                     "number1=" + number1 + "\n" +
@@ -123,8 +131,14 @@ public class Example1 {
             );
             setOnExit(_ -> {
                 //returning all variables to the parent shell
-                throw new SpelShellExitException(getAllVariables());
+                throw new ShellExitException(getSpelEvaluator().getAllVariables());
             });
+        }
+
+        @Override
+        protected boolean isMethodToHideInHelp(Method method) {
+            //show only custom methods in help
+            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
         }
 
         public void setNumber1(int number1) {
