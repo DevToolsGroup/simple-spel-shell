@@ -40,5 +40,7 @@ public interface SpelEvaluator {
 
     void addVariable(String name, Object value);
 
+    Object getVariable(String name);
+
     Map<String, Object> getAllVariables();
 }

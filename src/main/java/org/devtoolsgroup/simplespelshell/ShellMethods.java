@@ -41,29 +41,9 @@ public interface ShellMethods {
 
     String prompt(String prompt);
 
-    void exit(Object result);
-
-    void exit();
-
     void exn(String msg);
 
     void exnf(String format, Object... args);
-
-    void help(String filter);
-
-    void help();
-
-    void hist(int num) throws IOException;
-
-    void hist() throws IOException;
-
-    void hist(String filter) throws IOException;
-
-    Object var(String name, Object value);
-
-    Object var(String name);
-
-    void var();
 
     Path cd(Path path);
 

@@ -27,17 +27,20 @@ package org.devtoolsgroup.simplespelshell;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ConsoleImpl implements Console {
     private final Consumer<String> print;
     private final Consumer<String> println;
+    private final BiConsumer<String, Object[]> printf;
     private final Supplier<String> read;
 
     public ConsoleImpl() {
         print = System.out::print;
         println = System.out::println;
+        printf = System.out::printf;
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
         read = () -> {
             try {
@@ -56,6 +59,11 @@ public class ConsoleImpl implements Console {
     @Override
     public void println(String text) {
         println.accept(text);
+    }
+
+    @Override
+    public void printf(String format, Object... args) {
+        printf.accept(format, args);
     }
 
     @Override

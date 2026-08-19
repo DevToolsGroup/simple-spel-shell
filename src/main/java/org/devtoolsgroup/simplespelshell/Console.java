@@ -32,4 +32,8 @@ public interface Console {
     default void println(String text) {
         print(text + "\n");
     }
+
+    default void printf(String format, Object... args) {
+        print(String.format(format, args));
+    }
 }

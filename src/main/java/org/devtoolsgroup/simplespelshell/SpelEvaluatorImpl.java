@@ -75,6 +75,11 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     }
 
     @Override
+    public Object getVariable(String name) {
+        return variables.get(name);
+    }
+
+    @Override
     public Map<String, Object> getAllVariables() {
         return new HashMap<>(variables);
     }

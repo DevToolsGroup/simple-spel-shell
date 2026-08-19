@@ -24,21 +24,27 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getStackTrace;
+import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 
-public class SpelShell2 implements Shell2 {
+public class BaseSpelShell implements BaseShell {
     private final Set<String> methodsToHide;
     private final List<String> zeroArgMethods;
     private final List<String> oneArgMethods;
@@ -51,19 +57,19 @@ public class SpelShell2 implements Shell2 {
     private final ReplConfig replConfig;
     private final ReplConfig replConfigForScript;
 
-    public SpelShell2() {
+    public BaseSpelShell() {
         this(Path.of(""));
     }
 
-    public SpelShell2(Path initDir) {
+    public BaseSpelShell(Path initDir) {
         this(initDir, new ConsoleImpl());
     }
 
-    public SpelShell2(Console console) {
+    public BaseSpelShell(Console console) {
         this(Path.of(""), console);
     }
 
-    public SpelShell2(Path initDir, Console console) {
+    public BaseSpelShell(Path initDir, Console console) {
         methodsToHide = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
         zeroArgMethods = getMethodsWithNumOfArgs(0);
         oneArgMethods = getMethodsWithNumOfArgs(1);
@@ -159,6 +165,92 @@ public class SpelShell2 implements Shell2 {
         return workDirectory;
     }
 
+    @Override
+    public void exit(Object result) {
+        if (onExit != null) {
+            onExit.accept(result);
+        }
+    }
+
+    @Override
+    public void exit() {
+        exit(null);
+    }
+
+    @Override
+    public Object var(String name, Object value) {
+        if (name == null) {
+            throw new ShellException(false, "Variable name must not be null.");
+        }
+        spelEvaluator.addVariable(name, value);
+        return value;
+    }
+
+    @Override
+    public Object var(String name) {
+        return spelEvaluator.getVariable(name);
+    }
+
+    @Override
+    public void var() {
+        spelEvaluator.getAllVariables().entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .forEach(entry ->
+                getReplConsole().printf(
+                    "%s: %s\n",
+                    entry.getKey(),
+                    entry.getValue() == null ? "null" : entry.getValue().getClass().getName()
+                )
+            );
+    }
+
+    @Override
+    public void help(String filter) {
+        Console console = getReplConsole();
+        AtomicInteger prevOrder = new AtomicInteger(Integer.MIN_VALUE);
+        Function<Method, String> methodNameGetter = Method::getName;
+        getExposedMethods()
+            .filter(method -> matches(method.getName(), filter))
+            .sorted(Comparator.comparing(SpelShell::getSortOrder).thenComparing(methodNameGetter))
+            .map(method -> {
+                String params = Arrays.stream(method.getParameterTypes())
+                    .map(Class::getName)
+                    .collect(Collectors.joining(", "));
+                String returnType = method.getReturnType().getName();
+                String name = method.getName();
+                int thisOrder = getSortOrder(method);
+                String delim;
+                if (prevOrder.get() < 0 && thisOrder >= 0) {
+                    delim = "---\n";
+                } else {
+                    delim = "";
+                }
+                prevOrder.set(thisOrder);
+                return (String.format("%s%s(%s): %s", delim, name, params, returnType));
+            })
+            .forEach(console::println);
+    }
+
+    @Override
+    public void help() {
+
+    }
+
+    @Override
+    public void hist(int num) throws IOException {
+
+    }
+
+    @Override
+    public void hist() throws IOException {
+
+    }
+
+    @Override
+    public void hist(String filter) throws IOException {
+
+    }
+
     protected Object getRootObject() {
         return this;
     }
@@ -243,5 +335,13 @@ public class SpelShell2 implements Shell2 {
             .map(Method::getName)
             .distinct()
             .toList();
+    }
+
+    private Console getReplConsole() {
+        Console console = replConfig.getConsole();
+        if (console == null) {
+            throw new ShellException("REPL console is not set.");
+        }
+        return console;
     }
 }

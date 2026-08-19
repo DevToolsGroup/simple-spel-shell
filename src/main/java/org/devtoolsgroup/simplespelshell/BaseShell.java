@@ -24,10 +24,11 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.function.Consumer;
 
-public interface Shell2 {
+public interface BaseShell {
 
     Object runRepl();
 
@@ -47,5 +48,23 @@ public interface Shell2 {
 
     WorkDirectory getWorkDirectory();
 
+    void exit(Object result);
 
+    void exit();
+
+    Object var(String name, Object value);
+
+    Object var(String name);
+
+    void var();
+
+    void help(String filter);
+
+    void help();
+
+    void hist(int num) throws IOException;
+
+    void hist() throws IOException;
+
+    void hist(String filter) throws IOException;
 }
