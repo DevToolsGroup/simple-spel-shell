@@ -3,7 +3,7 @@ package org.devtoolsgroup.simplespelshell;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-class SpelShellTest {
+class ShellUtilsTest {
 
     @Test
     void splitForMatch() {
@@ -20,6 +20,6 @@ class SpelShellTest {
     }
 
     private void testSplit(String name, String... expectedSplit) {
-        Assertions.assertArrayEquals(expectedSplit, SpelShell.splitForMatch(name));
+        Assertions.assertArrayEquals(expectedSplit, ShellUtils.splitForMatch(name));
     }
 }
