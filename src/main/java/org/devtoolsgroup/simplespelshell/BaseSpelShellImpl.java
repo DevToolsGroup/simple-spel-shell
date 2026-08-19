@@ -325,9 +325,10 @@ public class BaseSpelShellImpl implements BaseSpelShell {
                 if (printExpressionBeforeEval) {
                     console.println(expr);
                 }
-                Object res = spelEvaluator.evaluate(getRootObject(), expr);
-                if (printEvalResultLength > 0 && res != null) {
-                    String resStr = res.toString();
+                lastEvalResult = spelEvaluator.evaluate(getRootObject(), expr);
+                var("$", lastEvalResult);
+                if (printEvalResultLength > 0 && lastEvalResult != null) {
+                    String resStr = lastEvalResult.toString();
                     if (resStr.length() <= printEvalResultLength) {
                         console.println(resStr);
                     } else {
