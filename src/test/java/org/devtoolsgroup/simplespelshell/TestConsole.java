@@ -24,61 +24,25 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.util.function.Consumer;
+public class TestConsole implements Console {
+    private final LineReader lineReader;
+    private final StringBuilder sb = new StringBuilder();
 
-public interface BaseSpelShell {
+    public TestConsole(LineReader lineReader) {
+        this.lineReader = lineReader;
+    }
 
-    Object runRepl();
+    @Override
+    public String read() {
+        return lineReader.readLine();
+    }
 
-    Object runScript(String script);
+    @Override
+    public void print(String text) {
+        sb.append(text);
+    }
 
-    Object runScript(LineReader scriptLineReader);
-
-    Object eval(Object arg, String script);
-
-    Console getConsole();
-
-    void setConsole(Console console);
-
-    ReplConfig getReplConfig();
-
-    ReplConfig getReplConfigForScript();
-
-    void setOnExit(Consumer<Object> onExit);
-
-    SpelEvaluator getSpelEvaluator();
-
-    void exit(Object result);
-
-    void exit();
-
-    Object var(String name, Object value);
-
-    Object var(String name);
-
-    void var();
-
-    void help(String filter);
-
-    void help();
-
-    void hist(int num);
-
-    void hist();
-
-    void hist(String filter);
-
-    void print(Object obj);
-
-    void println(Object obj);
-
-    void printf(String format, Object... args);
-
-    String format(String format, Object... args);
-
-    String prompt(String prompt);
-
-    void exn(String msg);
-
-    void exnf(String format, Object... args);
+    public String getCollectedOutput() {
+        return sb.toString();
+    }
 }

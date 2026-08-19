@@ -25,6 +25,7 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -33,8 +34,8 @@ public class ReplConfig {
     private Supplier<String> prompt;
     private Function<String, String> expressionInterceptor;
     private Function<String, Boolean> isCommentLine;
-    private boolean printExpressionBeforeEval;
-    private int printEvalResultLength;
+    private Consumer<String> exprBeforeEvalInterceptor;
+    private Consumer<Object> evalResultInterceptor;
     private File exprHistoryFile;
     private Class<? extends Exception> stopOnException;
 
@@ -62,20 +63,20 @@ public class ReplConfig {
         this.isCommentLine = isCommentLine;
     }
 
-    public boolean isPrintExpressionBeforeEval() {
-        return printExpressionBeforeEval;
+    public Consumer<String> getExprBeforeEvalInterceptor() {
+        return exprBeforeEvalInterceptor;
     }
 
-    public void setPrintExpressionBeforeEval(boolean printExpressionBeforeEval) {
-        this.printExpressionBeforeEval = printExpressionBeforeEval;
+    public void setExprBeforeEvalInterceptor(Consumer<String> exprBeforeEvalInterceptor) {
+        this.exprBeforeEvalInterceptor = exprBeforeEvalInterceptor;
     }
 
-    public int getPrintEvalResultLength() {
-        return printEvalResultLength;
+    public Consumer<Object> getEvalResultInterceptor() {
+        return evalResultInterceptor;
     }
 
-    public void setPrintEvalResultLength(int printEvalResultLength) {
-        this.printEvalResultLength = printEvalResultLength;
+    public void setEvalResultInterceptor(Consumer<Object> evalResultInterceptor) {
+        this.evalResultInterceptor = evalResultInterceptor;
     }
 
     public File getExprHistoryFile() {

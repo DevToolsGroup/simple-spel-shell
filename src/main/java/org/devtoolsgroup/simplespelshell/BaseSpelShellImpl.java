@@ -77,8 +77,12 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         replConfig.setExprHistoryFile(null);
         replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfig));
         replConfig.setIsCommentLine(str -> str.trim().startsWith("//"));
-        replConfig.setPrintExpressionBeforeEval(false);
-        replConfig.setPrintEvalResultLength(100);
+        replConfig.setExprBeforeEvalInterceptor(null);
+        replConfig.setEvalResultInterceptor(res -> {
+            if (res != null) {
+                getConsole().println(ShellUtils.truncateWithEllipsis(res.toString(), 100));
+            }
+        });
         replConfig.setStopOnException(ShellExitException.class);
 
         replConfigForScript = new ReplConfig();
@@ -86,8 +90,8 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         replConfigForScript.setExprHistoryFile(null);
         replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfigForScript));
         replConfigForScript.setIsCommentLine(replConfig.getIsCommentLine());
-        replConfigForScript.setPrintExpressionBeforeEval(false);
-        replConfigForScript.setPrintEvalResultLength(0);
+        replConfigForScript.setExprBeforeEvalInterceptor(null);
+        replConfigForScript.setEvalResultInterceptor(null);
         replConfigForScript.setStopOnException(Exception.class);
     }
 
@@ -102,7 +106,16 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     public Object runScript(String script) {
         return runRepl(
             replConfigForScript,
-            ShellUtils.expressionReader(ShellUtils.lineReader(script), replConfig.getIsCommentLine())
+            ShellUtils.expressionReader(ShellUtils.lineReader(script), replConfigForScript.getIsCommentLine())
+        );
+    }
+
+    @Order(-100)
+    @Override
+    public Object runScript(LineReader scriptLineReader) {
+        return runRepl(
+            replConfigForScript,
+            ShellUtils.expressionReader(scriptLineReader, replConfigForScript.getIsCommentLine())
         );
     }
 
@@ -315,8 +328,8 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         while (true) {
             Supplier<String> prompt = config.getPrompt();
             Function<String, String> expressionInterceptor = config.getExpressionInterceptor();
-            boolean printExpressionBeforeEval = config.isPrintExpressionBeforeEval();
-            int printEvalResultLength = config.getPrintEvalResultLength();
+            Consumer<String> exprBeforeEvalInterceptor = config.getExprBeforeEvalInterceptor();
+            Consumer<Object> evalResultInterceptor = config.getEvalResultInterceptor();
             Class<? extends Exception> stopOnException = config.getStopOnException();
             try {
                 if (prompt != null) {
@@ -332,18 +345,13 @@ public class BaseSpelShellImpl implements BaseSpelShell {
                 if (expr.isBlank()) {
                     continue;
                 }
-                if (printExpressionBeforeEval) {
-                    console.println(expr);
+                if (exprBeforeEvalInterceptor != null) {
+                    exprBeforeEvalInterceptor.accept(expr);
                 }
                 lastEvalResult = spelEvaluator.evaluate(getRootObject(), expr);
                 var("$", lastEvalResult);
-                if (printEvalResultLength > 0 && lastEvalResult != null) {
-                    String resStr = lastEvalResult.toString();
-                    if (resStr.length() <= printEvalResultLength) {
-                        console.println(resStr);
-                    } else {
-                        console.println(resStr.substring(0, printEvalResultLength));
-                    }
+                if (evalResultInterceptor != null) {
+                    evalResultInterceptor.accept(lastEvalResult);
                 }
             } catch (Exception ex) {
                 if (stopOnException != null && stopOnException.isAssignableFrom(ex.getClass())) {

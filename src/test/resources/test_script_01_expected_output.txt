@@ -1,0 +1,4 @@
+// a simple expression
+SpEL> 1+2
+// evaluating: 1+2
+// result: 3

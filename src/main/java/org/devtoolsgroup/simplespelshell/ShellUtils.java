@@ -196,6 +196,13 @@ public class ShellUtils {
         return sw.toString();
     }
 
+    public static String truncateWithEllipsis(String str, int maxLength) {
+        if (str.length() <= maxLength) {
+            return str;
+        }
+        return str.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
     private static String findMethodByPattern(List<String> methods, String pattern) {
         List<String> found = methods.stream()
             .filter(method -> matches(method, pattern))
