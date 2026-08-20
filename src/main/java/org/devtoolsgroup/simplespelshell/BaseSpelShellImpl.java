@@ -420,11 +420,13 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     private BiFunction<Object, String, String> makeDefaultExpressionInterceptor(boolean forScript) {
         return (rootObj, expr) -> {
             BaseSpelShellImpl shell = (BaseSpelShellImpl) rootObj;
+            String rewrittenExpr = ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
             ReplConfig config = forScript ? shell.getReplConfigForScript() : shell.getReplConfig();
-            if (config.getExprHistoryFile() != null) {
+            if (config.getExprHistoryFile() != null
+                && !rewrittenExpr.startsWith("hist(") && !rewrittenExpr.startsWith("help(")) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }
-            return ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
+            return rewrittenExpr;
         };
     }
 

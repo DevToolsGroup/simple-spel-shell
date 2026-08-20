@@ -158,7 +158,7 @@ public class ShellUtils {
         if (matcher.matches()) {
             return "%s()".formatted(findMethodByPattern(zeroArgMethods, matcher.group(1)));
         }
-        return expr;
+        return expr.trim();
     }
 
     public static int getSortOrder(Method method) {
@@ -182,6 +182,9 @@ public class ShellUtils {
     public static List<String> loadHistory(File exprHistoryFile) {
         if (exprHistoryFile == null) {
             throw new ShellException(false, "exprHistoryFile is not set.");
+        }
+        if (!exprHistoryFile.exists()) {
+            return List.of();
         }
         try {
             return Files.readAllLines(exprHistoryFile.toPath(), StandardCharsets.UTF_8);
