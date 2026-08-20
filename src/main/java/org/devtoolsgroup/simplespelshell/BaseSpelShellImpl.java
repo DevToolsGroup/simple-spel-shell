@@ -159,9 +159,8 @@ public class BaseSpelShellImpl implements BaseSpelShell {
 
     @Order(-100)
     @Override
-    public Object eval(Object arg, String script) {
-        spelEvaluator.addVariable("_", arg);
-        return runScript(script);
+    public Object eval(Object rootObject, String expression) {
+        return spelEvaluator.evaluate(rootObject, expression);
     }
 
     @Order(-1000)
@@ -429,8 +428,12 @@ public class BaseSpelShellImpl implements BaseSpelShell {
             BaseSpelShellImpl shell = (BaseSpelShellImpl) rootObj;
             String rewrittenExpr = ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
             ReplConfig config = forScript ? shell.getReplConfigForScript() : shell.getReplConfig();
-            if (config.getExprHistoryFile() != null
-                && !rewrittenExpr.startsWith("hist(") && !rewrittenExpr.startsWith("help(")) {
+            if (
+                config.getExprHistoryFile() != null
+                    && !rewrittenExpr.startsWith("hist(")
+                    && !rewrittenExpr.startsWith("help(")
+                    && !rewrittenExpr.startsWith("exit(")
+            ) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }
             return rewrittenExpr;

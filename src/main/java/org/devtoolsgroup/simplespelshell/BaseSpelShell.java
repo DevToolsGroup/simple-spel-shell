@@ -34,7 +34,7 @@ public interface BaseSpelShell {
 
     Object runScript(LineReader scriptLineReader);
 
-    Object eval(Object arg, String script);
+    Object eval(Object rootObject, String expression);
 
     Console getConsole();
 
