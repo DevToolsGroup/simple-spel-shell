@@ -46,7 +46,7 @@ class SpelShellTest {
     @Test
     void test2_submenus() throws IOException {
         testShell(
-            new Example1(),
+            new Example2(),
             "test_script_02_submenus.txt",
             "test_script_02_submenus_expected_output.txt"
         );

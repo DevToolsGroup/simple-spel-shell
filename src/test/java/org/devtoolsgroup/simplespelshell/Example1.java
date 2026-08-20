@@ -24,114 +24,26 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import org.springframework.core.annotation.Order;
+import java.io.File;
+import java.nio.file.Path;
 
-public class Example1 extends BaseSpelShellImpl {
-    public static final String DELIMITER = "-------------------------------\n";
+public class Example1 extends FileSystemAwareSpelShellImpl {
 
-    static void main() {
-        new Example1().runRepl();
+    static void main(String[] args) {
+        File initDir = new File(new File("target").exists() ? "target" : ".");
+        Example1 shell = new Example1(initDir.getAbsolutePath());
+        shell.getReplConfig().setExprHistoryFile(new File(initDir, "history.log"));
+
+        shell.runScript(Path.of("../src/test/resources/init_script.txt"));
+        shell.runRepl();
     }
 
-    public Example1() {
-        getReplConfig().setPrompt(_ -> "[main menu] SpEL> ");
-        //show custom methods only in help
-        setMinOrderForHelp(0);
-        setOnExit(ShellUtils.exnExit(true));
+    public Example1(String initDir) {
+        super(Path.of(initDir));
     }
 
-    @Order(-1000)
-    @Override
-    public Object runRepl() {
-        //overriding runRepl() to handle child command exit signals
-        while (true) {
-            try {
-                super.runRepl();
-            } catch (ShellExitException ex) {
-                if ((boolean) ex.getResult()) {
-                    //exit the main menu
-                    return null;
-                }
-                //return back to the main menu
-            }
-        }
-    }
-
-    public void command1() {
-        new Cmd1Shell(this).runRepl();
-    }
-
-    public void command2() {
-        new Cmd2Shell(this).runRepl();
-    }
-
-    private static class Cmd1Shell extends BaseSpelShellImpl {
-        private int number1;
-        private int number2;
-
-        public Cmd1Shell(BaseSpelShell parent) {
-            super(parent);
-            getReplConfig().setPrompt(_ ->
-                DELIMITER +
-                    "Adding numbers\n" +
-                    "number1=" + number1 + "\n" +
-                    "number2=" + number2 + "\n" +
-                    "[adder] SpEL> "
-            );
-            setOnExit(ShellUtils.exnExit(false));
-        }
-
-        public void setNumber1(int number1) {
-            this.number1 = number1;
-        }
-
-        public void setNumber2(int number2) {
-            this.number2 = number2;
-        }
-
-        public int calculate() {
-            int result = number1 + number2;
-            printf(
-                DELIMITER +
-                    "%s + %s = %s\n",
-                number1, number2, number1 + number2
-            );
-            return result;
-        }
-    }
-
-    private static class Cmd2Shell extends BaseSpelShellImpl {
-        private int number1;
-        private int number2;
-
-        public Cmd2Shell(BaseSpelShell parent) {
-            super(parent, parent.getConsole());
-            getReplConfig().setPrompt(_ ->
-                DELIMITER +
-                    "Multiplying numbers\n" +
-                    "number1=" + number1 + "\n" +
-                    "number2=" + number2 + "\n" +
-                    "[multiplier] SpEL> "
-            );
-            setOnExit(ShellUtils.exnExit(false));
-        }
-
-        public void setNumber1(int number1) {
-            this.number1 = number1;
-        }
-
-        public void setNumber2(int number2) {
-            this.number2 = number2;
-        }
-
-        public int calculate() {
-            int result = number1 * number2;
-            printf(
-                DELIMITER +
-                    "%s * %s = %s\n",
-                number1, number2, result
-            );
-            return result;
-        }
+    public void sayHi() {
+        String name = prompt("What is your name? ");
+        print(format("Hi, %s!\n", name));
     }
 }
