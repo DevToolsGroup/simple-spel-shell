@@ -25,26 +25,25 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
+import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class ReplConfig {
 
-    private Supplier<String> prompt;
+    private Function<Object, String> prompt;
     private BiFunction<Object, String, String> expressionInterceptor;
-    private Function<String, Boolean> isCommentLine;
-    private Consumer<String> exprBeforeEvalInterceptor;
-    private Consumer<Object> evalResultInterceptor;
+    private BiFunction<Object, String, Boolean> isCommentLine;
+    private BiConsumer<Object, String> exprBeforeEvalInterceptor;
+    private BiConsumer<Object, Object> evalResultInterceptor;
     private File exprHistoryFile;
     private Class<? extends Exception> stopOnException;
 
-    public Supplier<String> getPrompt() {
+    public Function<Object, String> getPrompt() {
         return prompt;
     }
 
-    public void setPrompt(Supplier<String> prompt) {
+    public void setPrompt(Function<Object, String> prompt) {
         this.prompt = prompt;
     }
 
@@ -56,27 +55,27 @@ public class ReplConfig {
         this.expressionInterceptor = expressionInterceptor;
     }
 
-    public Function<String, Boolean> getIsCommentLine() {
+    public BiFunction<Object, String, Boolean> getIsCommentLine() {
         return isCommentLine;
     }
 
-    public void setIsCommentLine(Function<String, Boolean> isCommentLine) {
+    public void setIsCommentLine(BiFunction<Object, String, Boolean> isCommentLine) {
         this.isCommentLine = isCommentLine;
     }
 
-    public Consumer<String> getExprBeforeEvalInterceptor() {
+    public BiConsumer<Object, String> getExprBeforeEvalInterceptor() {
         return exprBeforeEvalInterceptor;
     }
 
-    public void setExprBeforeEvalInterceptor(Consumer<String> exprBeforeEvalInterceptor) {
+    public void setExprBeforeEvalInterceptor(BiConsumer<Object, String> exprBeforeEvalInterceptor) {
         this.exprBeforeEvalInterceptor = exprBeforeEvalInterceptor;
     }
 
-    public Consumer<Object> getEvalResultInterceptor() {
+    public BiConsumer<Object, Object> getEvalResultInterceptor() {
         return evalResultInterceptor;
     }
 
-    public void setEvalResultInterceptor(Consumer<Object> evalResultInterceptor) {
+    public void setEvalResultInterceptor(BiConsumer<Object, Object> evalResultInterceptor) {
         this.evalResultInterceptor = evalResultInterceptor;
     }
 

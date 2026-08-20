@@ -28,7 +28,7 @@ import org.springframework.core.annotation.Order;
 
 import java.lang.reflect.Method;
 import java.util.Map;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
@@ -42,7 +42,7 @@ public class Example1 {
         public static final String DELIMITER = "-------------------------------\n";
 
         public MainShell() {
-            getReplConfig().setPrompt(() -> "[main menu] SpEL> ");
+            getReplConfig().setPrompt(_ -> "[main menu] SpEL> ");
             setOnExit(_ -> {
                 throw new ShellExitException();
             });
@@ -73,7 +73,7 @@ public class Example1 {
 
         public void command1() {
             Cmd1Shell cmd1Shell = new Cmd1Shell(getSpelEvaluator().getAllVariables());
-            Supplier<String> origPrompt = cmd1Shell.getReplConfig().getPrompt();
+            Function<Object, String> origPrompt = cmd1Shell.getReplConfig().getPrompt();
             cmd1Shell.setConsole(getConsole());
             cmd1Shell.setReplConfig(getReplConfig());
             cmd1Shell.getReplConfig().setPrompt(origPrompt);
@@ -82,7 +82,7 @@ public class Example1 {
 
         public void command2() {
             Cmd2Shell cmd2Shell = new Cmd2Shell(getSpelEvaluator().getAllVariables());
-            Supplier<String> origPrompt = cmd2Shell.getReplConfig().getPrompt();
+            Function<Object, String> origPrompt = cmd2Shell.getReplConfig().getPrompt();
             cmd2Shell.setConsole(getConsole());
             cmd2Shell.setReplConfig(getReplConfig());
             cmd2Shell.getReplConfig().setPrompt(origPrompt);
@@ -96,7 +96,7 @@ public class Example1 {
 
         public Cmd1Shell(Map<String, Object> variables) {
             variables.forEach(this::var);
-            getReplConfig().setPrompt(() ->
+            getReplConfig().setPrompt(_ ->
                 DELIMITER +
                     "Adding numbers\n" +
                     "number1=" + number1 + "\n" +
@@ -140,7 +140,7 @@ public class Example1 {
 
         public Cmd2Shell(Map<String, Object> variables) {
             variables.forEach(this::var);
-            getReplConfig().setPrompt(() ->
+            getReplConfig().setPrompt(_ ->
                 DELIMITER +
                     "Multiplying numbers\n" +
                     "number1=" + number1 + "\n" +

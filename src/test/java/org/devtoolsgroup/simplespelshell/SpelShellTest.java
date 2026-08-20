@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 class SpelShellTest {
 
@@ -65,9 +64,9 @@ class SpelShellTest {
         shell.setConsole(console);
         if (processComments) {
             shell.getReplConfig().setPrompt(null);
-            Function<String, Boolean> isCommentLineOrig = shell.getReplConfig().getIsCommentLine();
-            shell.getReplConfig().setIsCommentLine(line -> {
-                if (isCommentLineOrig.apply(line)) {
+            BiFunction<Object, String, Boolean> isCommentLineOrig = shell.getReplConfig().getIsCommentLine();
+            shell.getReplConfig().setIsCommentLine((rootObj, line) -> {
+                if (isCommentLineOrig.apply(rootObj, line)) {
                     console.println(line);
                     return true;
                 }
@@ -81,10 +80,10 @@ class SpelShellTest {
             }
             return expressionInterceptorOrig.apply(rootObj, expr);
         });
-        shell.getReplConfig().setExprBeforeEvalInterceptor(expr ->
+        shell.getReplConfig().setExprBeforeEvalInterceptor((_, expr) ->
             console.println("// evaluating: " + expr)
         );
-        shell.getReplConfig().setEvalResultInterceptor(res -> {
+        shell.getReplConfig().setEvalResultInterceptor((_, res) -> {
             if (res != null) {
                 console.println("// result: " + res);
             }
