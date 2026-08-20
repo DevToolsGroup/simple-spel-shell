@@ -1,14 +1,14 @@
 he
 c1
 he
-n1 19
-n2 72
+n1 1
+n2 2
 sum=calc
 ex
 c2
 he
 n1 #sum
-n2 63
+n2 3
 prod=calc
 ex
 {#sum,#prod}

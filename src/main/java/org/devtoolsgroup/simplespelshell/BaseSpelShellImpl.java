@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -75,7 +76,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         replConfig = new ReplConfig();
         replConfig.setPrompt(() -> "SpEL> ");
         replConfig.setExprHistoryFile(null);
-        replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfig));
+        replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(false));
         replConfig.setIsCommentLine(str -> str.trim().startsWith("//"));
         replConfig.setExprBeforeEvalInterceptor(null);
         replConfig.setEvalResultInterceptor(res -> {
@@ -88,7 +89,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         replConfigForScript = new ReplConfig();
         replConfigForScript.setPrompt(null);
         replConfigForScript.setExprHistoryFile(null);
-        replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(replConfigForScript));
+        replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(true));
         replConfigForScript.setIsCommentLine(replConfig.getIsCommentLine());
         replConfigForScript.setExprBeforeEvalInterceptor(null);
         replConfigForScript.setEvalResultInterceptor(null);
@@ -339,7 +340,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     protected Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
         while (true) {
             Supplier<String> prompt = config.getPrompt();
-            Function<String, String> expressionInterceptor = config.getExpressionInterceptor();
+            BiFunction<Object, String, String> expressionInterceptor = config.getExpressionInterceptor();
             Consumer<String> exprBeforeEvalInterceptor = config.getExprBeforeEvalInterceptor();
             Consumer<Object> evalResultInterceptor = config.getEvalResultInterceptor();
             Class<? extends Exception> stopOnException = config.getStopOnException();
@@ -349,7 +350,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
                 }
                 String expr = expressionReader.readExpression();
                 if (expressionInterceptor != null) {
-                    expr = expressionInterceptor.apply(expr);
+                    expr = expressionInterceptor.apply(getRootObject(), expr);
                 }
                 if (expr == null) {
                     return lastEvalResult;
@@ -379,12 +380,14 @@ public class BaseSpelShellImpl implements BaseSpelShell {
         }
     }
 
-    private Function<String, String> makeDefaultExpressionInterceptor(ReplConfig config) {
-        return expr -> {
+    private BiFunction<Object, String, String> makeDefaultExpressionInterceptor(boolean forScript) {
+        return (rootObj, expr) -> {
+            BaseSpelShellImpl shell = (BaseSpelShellImpl) rootObj;
+            ReplConfig config = forScript ? shell.getReplConfigForScript() : shell.getReplConfig();
             if (config.getExprHistoryFile() != null) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }
-            return ShellUtils.rewriteExpr(expr, zeroArgMethodsForRewrite, oneArgMethodsForRewrite);
+            return ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
         };
     }
 

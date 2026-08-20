@@ -25,6 +25,7 @@ SOFTWARE.
 package org.devtoolsgroup.simplespelshell;
 
 import java.io.File;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -32,7 +33,7 @@ import java.util.function.Supplier;
 public class ReplConfig {
 
     private Supplier<String> prompt;
-    private Function<String, String> expressionInterceptor;
+    private BiFunction<Object, String, String> expressionInterceptor;
     private Function<String, Boolean> isCommentLine;
     private Consumer<String> exprBeforeEvalInterceptor;
     private Consumer<Object> evalResultInterceptor;
@@ -47,11 +48,11 @@ public class ReplConfig {
         this.prompt = prompt;
     }
 
-    public Function<String, String> getExpressionInterceptor() {
+    public BiFunction<Object, String, String> getExpressionInterceptor() {
         return expressionInterceptor;
     }
 
-    public void setExpressionInterceptor(Function<String, String> expressionInterceptor) {
+    public void setExpressionInterceptor(BiFunction<Object, String, String> expressionInterceptor) {
         this.expressionInterceptor = expressionInterceptor;
     }
 

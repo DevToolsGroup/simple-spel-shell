@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 class SpelShellTest {
@@ -73,12 +74,12 @@ class SpelShellTest {
                 return false;
             });
         }
-        Function<String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
-        shell.getReplConfig().setExpressionInterceptor(expr -> {
+        BiFunction<Object, String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
+        shell.getReplConfig().setExpressionInterceptor((rootObj, expr) -> {
             if (expr != null && !expr.isBlank()) {
                 console.println((processComments ? "SpEL> " : "") + expr);
             }
-            return expressionInterceptorOrig.apply(expr);
+            return expressionInterceptorOrig.apply(rootObj, expr);
         });
         shell.getReplConfig().setExprBeforeEvalInterceptor(expr ->
             console.println("// evaluating: " + expr)
