@@ -24,45 +24,27 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.util.function.Consumer;
+public interface CoreSpelShell {
 
-public interface BaseSpelShell extends CoreSpelShell {
+    Object runRepl();
 
-    void setOnExit(Consumer<Object> onExit);
+    Object runScript(String script);
 
-    void setMinOrderForHelp(int minOrderForHelp);
+    Object runScript(LineReader scriptLineReader);
 
-    void exit(Object result);
+    Object eval(Object rootObject, String expression);
 
-    void exit();
+    SpelEvaluator getSpelEvaluator();
 
-    Object var(String name, Object value);
+    Console getConsole();
 
-    Object var(String name);
+    void setConsole(Console console);
 
-    void var();
+    ReplConfig getReplConfig();
 
-    void help(String filter);
+    void setReplConfig(ReplConfig replConfig);
 
-    void help();
+    ReplConfig getReplConfigForScript();
 
-    void hist(int num);
-
-    void hist();
-
-    void hist(String filter);
-
-    void print(Object obj);
-
-    void println(Object obj);
-
-    void printf(String format, Object... args);
-
-    String format(String format, Object... args);
-
-    String prompt(String prompt);
-
-    void exn(String msg);
-
-    void exnf(String format, Object... args);
+    void setReplConfigForScript(ReplConfig replConfigForScript);
 }
