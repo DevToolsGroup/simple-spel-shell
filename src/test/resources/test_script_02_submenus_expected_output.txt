@@ -1,97 +1,104 @@
 [main menu] SpEL> he
-// evaluating: help()
+                  ├ evaluating: help()
 command1(): void
 command2(): void
+                  └ result: null
 [main menu] SpEL> c1
-// evaluating: command1()
+                  ├ evaluating: command1()
 -------------------------------
 Adding numbers
 number1=0
 number2=0
 [adder] SpEL> he
-// evaluating: help()
+              ├ evaluating: help()
 calculate(): int
 setNumber1(number1: int): void
 setNumber2(number2: int): void
+              └ result: null
 -------------------------------
 Adding numbers
 number1=0
 number2=0
 [adder] SpEL> n1 1
-// evaluating: setNumber1(1)
+              ├ evaluating: setNumber1(1)
+              └ result: null
 -------------------------------
 Adding numbers
 number1=1
 number2=0
 [adder] SpEL> n2 2
-// evaluating: setNumber2(2)
+              ├ evaluating: setNumber2(2)
+              └ result: null
 -------------------------------
 Adding numbers
 number1=1
 number2=2
 [adder] SpEL> sum=calc
-// evaluating: var('sum',calculate())
+              ├ evaluating: var('sum',calculate())
 -------------------------------
 1 + 2 = 3
-// result: 3
+              └ result: 3
 -------------------------------
 Adding numbers
 number1=1
 number2=2
 [adder] SpEL> ex
-// evaluating: exit()
+              ├ evaluating: exit()
 -------------------------------
 Adding numbers
 number1=1
 number2=2
 [adder] SpEL> c2
-// evaluating: command2()
+              ├ evaluating: command2()
 -------------------------------
 Multiplying numbers
 number1=0
 number2=0
 [multiplier] SpEL> he
-// evaluating: help()
+                   ├ evaluating: help()
 calculate(): int
 setNumber1(number1: int): void
 setNumber2(number2: int): void
+                   └ result: null
 -------------------------------
 Multiplying numbers
 number1=0
 number2=0
 [multiplier] SpEL> n1 #sum
-// evaluating: setNumber1(#sum)
+                   ├ evaluating: setNumber1(#sum)
+                   └ result: null
 -------------------------------
 Multiplying numbers
 number1=3
 number2=0
 [multiplier] SpEL> n2 3
-// evaluating: setNumber2(3)
+                   ├ evaluating: setNumber2(3)
+                   └ result: null
 -------------------------------
 Multiplying numbers
 number1=3
 number2=3
 [multiplier] SpEL> prod=calc
-// evaluating: var('prod',calculate())
+                   ├ evaluating: var('prod',calculate())
 -------------------------------
 3 * 3 = 9
-// result: 9
+                   └ result: 9
 -------------------------------
 Multiplying numbers
 number1=3
 number2=3
 [multiplier] SpEL> ex
-// evaluating: exit()
+                   ├ evaluating: exit()
 -------------------------------
 Multiplying numbers
 number1=3
 number2=3
 [multiplier] SpEL> {#sum,#prod}
-// evaluating: {#sum,#prod}
-// result: [3, 9]
+                   ├ evaluating: {#sum,#prod}
+                   └ result: [3, 9]
 -------------------------------
 Multiplying numbers
 number1=3
 number2=3
 [multiplier] SpEL> ex
-// evaluating: exit()
+                   ├ evaluating: exit()

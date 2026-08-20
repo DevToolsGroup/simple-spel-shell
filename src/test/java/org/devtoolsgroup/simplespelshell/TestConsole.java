@@ -24,17 +24,31 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Predicate;
+
 public class TestConsole implements Console {
-    private final LineReader lineReader;
+    private final List<String> lines = new LinkedList<>();
+    private final Predicate<String> isCommentLine;
     private final StringBuilder sb = new StringBuilder();
 
-    public TestConsole(LineReader lineReader) {
-        this.lineReader = lineReader;
+    public TestConsole(LineReader lineReader, Predicate<String> isCommentLine) {
+        this.isCommentLine = isCommentLine;
+        String line = lineReader.readLine();
+        while (line != null) {
+            lines.add(line);
+            line = lineReader.readLine();
+        }
+        readAndPrintComments();
     }
 
     @Override
     public String read() {
-        return lineReader.readLine();
+        if (lines.isEmpty()) {
+            return null;
+        }
+        return lines.removeFirst();
     }
 
     @Override
@@ -44,5 +58,16 @@ public class TestConsole implements Console {
 
     public String getCollectedOutput() {
         return sb.toString();
+    }
+
+    public void readAndPrintComments() {
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.isBlank() || isCommentLine.test(line)) {
+                println(line);
+            } else {
+                return;
+            }
+        }
     }
 }

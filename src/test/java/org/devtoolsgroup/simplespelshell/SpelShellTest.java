@@ -38,7 +38,6 @@ class SpelShellTest {
     void test1() throws IOException {
         testShell(
             new BaseSpelShellImpl(),
-            true,
             "test_script_01.txt",
             "test_script_01_expected_output.txt"
         );
@@ -48,45 +47,32 @@ class SpelShellTest {
     void test2_submenus() throws IOException {
         testShell(
             new Example1.MainShell(),
-            false,
             "test_script_02_submenus.txt",
             "test_script_02_submenus_expected_output.txt"
         );
     }
 
     private static void testShell(
-        BaseSpelShell shell, boolean processComments,
-        String scriptPath, String expectedOutputPath
+        BaseSpelShell shell, String scriptPath, String expectedOutputPath
     ) throws IOException {
         String script = readStringFromClasspath(scriptPath);
         LineReader scriptLineReader = ShellUtils.lineReader(script);
-        TestConsole console = new TestConsole(scriptLineReader);
+        BiFunction<Object, String, Boolean> isCommentLine = shell.getReplConfig().getIsCommentLine();
+        TestConsole console = new TestConsole(scriptLineReader, line -> isCommentLine.apply(null, line));
         shell.setConsole(console);
-        if (processComments) {
-            shell.getReplConfig().setPrompt(null);
-            BiFunction<Object, String, Boolean> isCommentLineOrig = shell.getReplConfig().getIsCommentLine();
-            shell.getReplConfig().setIsCommentLine((rootObj, line) -> {
-                if (isCommentLineOrig.apply(rootObj, line)) {
-                    console.println(line);
-                    return true;
-                }
-                return false;
-            });
-        }
         BiFunction<Object, String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
         shell.getReplConfig().setExpressionInterceptor((rootObj, expr) -> {
             if (expr != null && !expr.isBlank()) {
-                console.println((processComments ? "SpEL> " : "") + expr);
+                console.println(expr);
             }
             return expressionInterceptorOrig.apply(rootObj, expr);
         });
-        shell.getReplConfig().setExprBeforeEvalInterceptor((_, expr) ->
-            console.println("// evaluating: " + expr)
+        shell.getReplConfig().setExprBeforeEvalInterceptor((rootObj, expr) ->
+            console.printf("%" + getPromptLastLineLength(rootObj) + "s├ evaluating: %s\n", "", expr)
         );
-        shell.getReplConfig().setEvalResultInterceptor((_, res) -> {
-            if (res != null) {
-                console.println("// result: " + res);
-            }
+        shell.getReplConfig().setEvalResultInterceptor((rootObj, res) -> {
+            console.printf("%" + getPromptLastLineLength(rootObj) + "s└ result: %s\n", "", res);
+            console.readAndPrintComments();
         });
 
         shell.runRepl();
@@ -95,6 +81,13 @@ class SpelShellTest {
             readStringFromClasspath(expectedOutputPath).trim(),
             console.getCollectedOutput().trim()
         );
+    }
+
+    private static int getPromptLastLineLength(Object rootObj) {
+        BaseSpelShell ro = (BaseSpelShell) rootObj;
+        String prompt = ro.getReplConfig().getPrompt().apply(rootObj);
+        String[] promptParts = prompt.split("\n");
+        return promptParts[promptParts.length - 1].length();
     }
 
     private static String readStringFromClasspath(String filePath) throws IOException {
