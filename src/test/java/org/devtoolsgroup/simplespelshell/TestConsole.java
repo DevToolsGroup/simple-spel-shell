@@ -32,6 +32,11 @@ public class TestConsole implements Console {
     private final List<String> lines = new LinkedList<>();
     private final Predicate<String> isCommentLine;
     private final StringBuilder sb = new StringBuilder();
+    private boolean debug;
+    private int numberOfReads = 0;
+    private int maxNumberOfReads = 1000;
+    private int numberOfPrints = 0;
+    private int maxNumberOfPrints = 1000;
 
     public TestConsole(LineReader lineReader, Predicate<String> isCommentLine) {
         this.isCommentLine = isCommentLine;
@@ -45,14 +50,29 @@ public class TestConsole implements Console {
 
     @Override
     public String read() {
+        numberOfReads++;
+        if (numberOfReads > maxNumberOfReads) {
+            throw new RuntimeException("numberOfReads > " + maxNumberOfReads);
+        }
         if (lines.isEmpty()) {
             return null;
         }
-        return lines.removeFirst();
+        String read = lines.removeFirst();
+        if (debug) {
+            System.out.printf("\n--------------------------------------------------\nTestConsole.read:\n%s", read);
+        }
+        return read;
     }
 
     @Override
     public void print(String text) {
+        numberOfPrints++;
+        if (numberOfPrints > maxNumberOfPrints) {
+            throw new RuntimeException("numberOfPrints > " + maxNumberOfPrints);
+        }
+        if (debug) {
+            System.out.printf("\n--------------------------------------------------\nTestConsole.print:\n%s", text);
+        }
         sb.append(text);
     }
 
@@ -69,5 +89,17 @@ public class TestConsole implements Console {
                 return;
             }
         }
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
+    }
+
+    public void setMaxNumberOfReads(int maxNumberOfReads) {
+        this.maxNumberOfReads = maxNumberOfReads;
+    }
+
+    public void setMaxNumberOfPrints(int maxNumberOfPrints) {
+        this.maxNumberOfPrints = maxNumberOfPrints;
     }
 }

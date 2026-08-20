@@ -30,7 +30,11 @@ public interface BaseSpelShell extends CoreSpelShell {
 
     void setOnExit(Consumer<Object> onExit);
 
+    Consumer<Object> getOnExit();
+
     void setMinOrderForHelp(int minOrderForHelp);
+
+    int getMinOrderForHelp();
 
     void exit(Object result);
 

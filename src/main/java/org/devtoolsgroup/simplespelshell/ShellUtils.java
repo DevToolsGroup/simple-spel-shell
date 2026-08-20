@@ -45,6 +45,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -204,6 +205,16 @@ public class ShellUtils {
             return str;
         }
         return str.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
+    public static Consumer<Object> exnExit(Object result) {
+        return _ -> {
+            throw new ShellExitException(result);
+        };
+    }
+
+    public static Consumer<Object> exnExit() {
+        return exnExit(null);
     }
 
     private static String findMethodByPattern(List<String> methods, String pattern) {

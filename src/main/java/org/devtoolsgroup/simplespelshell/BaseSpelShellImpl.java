@@ -41,19 +41,26 @@ import static org.devtoolsgroup.simplespelshell.ShellUtils.loadHistory;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 
 public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShell {
-    protected Consumer<Object> onExit = _ -> System.exit(1);
+    private Consumer<Object> onExit = _ -> System.exit(0);
     private int minOrderForHelp = -100;
 
     public BaseSpelShellImpl() {
-        this(null);
+        this(new ConsoleImpl());
+    }
+
+    public BaseSpelShellImpl(Console console) {
+        this(null, console);
     }
 
     public BaseSpelShellImpl(BaseSpelShell parentShell) {
-        this(parentShell, new ConsoleImpl());
+        this(parentShell, parentShell.getConsole());
     }
 
     public BaseSpelShellImpl(BaseSpelShell parentShell, Console console) {
         super(parentShell, console);
+        if (parentShell != null) {
+            minOrderForHelp = parentShell.getMinOrderForHelp();
+        }
     }
 
     @Order(-1000)
@@ -64,8 +71,20 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     @Order(-1000)
     @Override
+    public Consumer<Object> getOnExit() {
+        return onExit;
+    }
+
+    @Order(-1000)
+    @Override
     public void setMinOrderForHelp(int minOrderForHelp) {
         this.minOrderForHelp = minOrderForHelp;
+    }
+
+    @Order(-1000)
+    @Override
+    public int getMinOrderForHelp() {
+        return minOrderForHelp;
     }
 
     @Order(-100)

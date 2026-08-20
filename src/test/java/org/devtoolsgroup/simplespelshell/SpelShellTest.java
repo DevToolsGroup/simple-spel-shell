@@ -46,7 +46,7 @@ class SpelShellTest {
     @Test
     void test2_submenus() throws IOException {
         testShell(
-            new Example1.MainShell(),
+            new Example1(),
             "test_script_02_submenus.txt",
             "test_script_02_submenus_expected_output.txt"
         );
@@ -59,6 +59,7 @@ class SpelShellTest {
         LineReader scriptLineReader = ShellUtils.lineReader(script);
         BiFunction<Object, String, Boolean> isCommentLine = shell.getReplConfig().getIsCommentLine();
         TestConsole console = new TestConsole(scriptLineReader, line -> isCommentLine.apply(null, line));
+//        console.setDebug(true);
         shell.setConsole(console);
         BiFunction<Object, String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
         shell.getReplConfig().setExpressionInterceptor((rootObj, expr) -> {

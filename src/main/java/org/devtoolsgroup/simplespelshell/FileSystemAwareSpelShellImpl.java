@@ -43,23 +43,19 @@ import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
 public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements FileSystemAwareSpelShell {
     private final WorkingDirectory workingDirectory;
 
-    public FileSystemAwareSpelShellImpl() {
-        this((FileSystemAwareSpelShell) null);
-    }
-
     public FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell) {
-        this(parentShell, Path.of("."), new ConsoleImpl());
+        this(parentShell, new ConsoleImpl(), null);
     }
 
     public FileSystemAwareSpelShellImpl(Path initDir) {
-        this(initDir, new ConsoleImpl());
+        this(new ConsoleImpl(), initDir);
     }
 
-    public FileSystemAwareSpelShellImpl(Path initDir, Console console) {
-        this(null, initDir, console);
+    public FileSystemAwareSpelShellImpl(Console console, Path initDir) {
+        this(null, console, initDir);
     }
 
-    public FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Path initDir, Console console) {
+    public FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Console console, Path initDir) {
         super(parentShell, console);
 
         if (parentShell == null) {

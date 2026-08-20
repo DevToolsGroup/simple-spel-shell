@@ -37,6 +37,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getStackTrace;
 
 public class CoreSpelShellImpl implements CoreSpelShell {
@@ -50,14 +51,6 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     private Console console;
     private ReplConfig replConfig;
     private ReplConfig replConfigForScript;
-
-    public CoreSpelShellImpl() {
-        this(null);
-    }
-
-    public CoreSpelShellImpl(CoreSpelShell parentShell) {
-        this(parentShell, new ConsoleImpl());
-    }
 
     public CoreSpelShellImpl(CoreSpelShell parentShell, Console console) {
         internalMethods = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
@@ -200,7 +193,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     }
 
     protected boolean isMethodToHideInRewrite(Method method) {
-        return internalMethods.contains(method.getName());
+        return internalMethods.contains(method.getName()) || getSortOrder(method) < -100;
     }
 
     protected Stream<Method> getExposedMethods(Predicate<Method> predicate) {

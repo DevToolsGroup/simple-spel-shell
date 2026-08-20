@@ -26,46 +26,43 @@ package org.devtoolsgroup.simplespelshell;
 
 import org.springframework.core.annotation.Order;
 
-import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
+public class Example1 extends BaseSpelShellImpl {
+    public static final String DELIMITER = "-------------------------------\n";
 
-public class Example1 {
     static void main() {
-        new MainShell().runRepl();
+        new Example1().runRepl();
     }
 
-    public static class MainShell extends BaseSpelShellImpl {
-        public static final String DELIMITER = "-------------------------------\n";
+    public Example1() {
+        getReplConfig().setPrompt(_ -> "[main menu] SpEL> ");
+        //show custom methods only in help
+        setMinOrderForHelp(0);
+        setOnExit(ShellUtils.exnExit(true));
+    }
 
-        public MainShell() {
-            getReplConfig().setPrompt(_ -> "[main menu] SpEL> ");
-            setOnExit(_ -> {
-                throw new ShellExitException(true);
-            });
-            //show custom methods in help only
-            setMinOrderForHelp(0);
-        }
-
-        @Order(-1000)
-        @Override
-        public Object runRepl() {
-            while (true) {
-                try {
-                    super.runRepl();
-                } catch (ShellExitException ex) {
-                    if ((boolean) ex.getResult()) {
-                        return null;
-                    }
+    @Order(-1000)
+    @Override
+    public Object runRepl() {
+        //overriding runRepl() to handle child command exit signals
+        while (true) {
+            try {
+                super.runRepl();
+            } catch (ShellExitException ex) {
+                if ((boolean) ex.getResult()) {
+                    //exit the main menu
+                    return null;
                 }
+                //return back to the main menu
             }
         }
+    }
 
-        public void command1() {
-            new Cmd1Shell(this).runRepl();
-        }
+    public void command1() {
+        new Cmd1Shell(this).runRepl();
+    }
 
-        public void command2() {
-            new Cmd2Shell(this).runRepl();
-        }
+    public void command2() {
+        new Cmd2Shell(this).runRepl();
     }
 
     private static class Cmd1Shell extends BaseSpelShellImpl {
@@ -73,7 +70,7 @@ public class Example1 {
         private int number2;
 
         public Cmd1Shell(BaseSpelShell parent) {
-            super(parent, parent.getConsole());
+            super(parent);
             getReplConfig().setPrompt(_ ->
                 DELIMITER +
                     "Adding numbers\n" +
@@ -81,11 +78,7 @@ public class Example1 {
                     "number2=" + number2 + "\n" +
                     "[adder] SpEL> "
             );
-            setOnExit(_ -> {
-                throw new ShellExitException(false);
-            });
-            //show custom methods in help only
-            setMinOrderForHelp(0);
+            setOnExit(ShellUtils.exnExit(false));
         }
 
         public void setNumber1(int number1) {
@@ -120,11 +113,7 @@ public class Example1 {
                     "number2=" + number2 + "\n" +
                     "[multiplier] SpEL> "
             );
-            setOnExit(_ -> {
-                throw new ShellExitException(false);
-            });
-            //show custom methods in help only
-            setMinOrderForHelp(0);
+            setOnExit(ShellUtils.exnExit(false));
         }
 
         public void setNumber1(int number1) {
