@@ -26,10 +26,7 @@ package org.devtoolsgroup.simplespelshell;
 
 import org.springframework.core.annotation.Order;
 
-import java.lang.reflect.Method;
-
 import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
-import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 
 public class Example1 {
     static void main() {
@@ -44,6 +41,8 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new ShellExitException(true);
             });
+            //show custom methods in help only
+            setMinOrderForHelp(0);
         }
 
         @Order(-1000)
@@ -58,12 +57,6 @@ public class Example1 {
                     }
                 }
             }
-        }
-
-        @Override
-        protected boolean isMethodToHideInHelp(Method method) {
-            //show only custom methods in help
-            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
         }
 
         public void command1() {
@@ -91,12 +84,8 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new ShellExitException(false);
             });
-        }
-
-        @Override
-        protected boolean isMethodToHideInHelp(Method method) {
-            //show only custom methods in help
-            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
+            //show custom methods in help only
+            setMinOrderForHelp(0);
         }
 
         public void setNumber1(int number1) {
@@ -134,12 +123,8 @@ public class Example1 {
             setOnExit(_ -> {
                 throw new ShellExitException(false);
             });
-        }
-
-        @Override
-        protected boolean isMethodToHideInHelp(Method method) {
-            //show only custom methods in help
-            return super.isMethodToHideInHelp(method) || getSortOrder(method) < 0;
+            //show custom methods in help only
+            setMinOrderForHelp(0);
         }
 
         public void setNumber1(int number1) {

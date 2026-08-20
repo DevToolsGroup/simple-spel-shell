@@ -55,6 +55,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     private final SpelEvaluator spelEvaluator;
     protected Object lastEvalResult;
     protected Consumer<Object> onExit = _ -> System.exit(1);
+    private int minOrderForHelp = -100;
 
     private Console console;
     private ReplConfig replConfig;
@@ -203,6 +204,12 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     @Override
     public void setOnExit(Consumer<Object> onExit) {
         this.onExit = onExit;
+    }
+
+    @Order(-1000)
+    @Override
+    public void setMinOrderForHelp(int minOrderForHelp) {
+        this.minOrderForHelp = minOrderForHelp;
     }
 
     @Order(-1000)
@@ -361,7 +368,7 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     }
 
     protected boolean isMethodToHideInHelp(Method method) {
-        return internalMethods.contains(method.getName()) || getSortOrder(method) < -100;
+        return internalMethods.contains(method.getName()) || getSortOrder(method) < minOrderForHelp;
     }
 
     protected boolean isMethodToHideInRewrite(Method method) {

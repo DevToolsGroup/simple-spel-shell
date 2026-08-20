@@ -50,6 +50,8 @@ public interface BaseSpelShell {
 
     void setOnExit(Consumer<Object> onExit);
 
+    void setMinOrderForHelp(int minOrderForHelp);
+
     SpelEvaluator getSpelEvaluator();
 
     void exit(Object result);
