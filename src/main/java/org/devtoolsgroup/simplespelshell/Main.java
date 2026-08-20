@@ -24,14 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import org.jline.reader.LineReader;
-import org.jline.reader.LineReaderBuilder;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
-import org.jline.widget.AutopairWidgets;
-
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.Path;
 
 public class Main extends FileSystemAwareSpelShellImpl {
@@ -39,37 +32,18 @@ public class Main extends FileSystemAwareSpelShellImpl {
     static void main(String[] args) {
         File initDir = new File(new File("target").exists() ? "target" : ".");
         Main shell = new Main(initDir.getAbsolutePath());
+        shell.getReplConfig().setExprHistoryFile(new File(initDir, "history.log"));
 
         shell.runScript(Path.of("../src/test/resources/init_script.txt"));
-
-        shell.getReplConfig().setExprHistoryFile(new File(initDir, "history.log"));
         shell.runRepl();
     }
 
     public Main(String initDir) {
-        super(Path.of(initDir), makeConsole());
+        super(Path.of(initDir));
     }
 
     public void sayHi() {
         String name = prompt("What is your name? ");
         print(format("Hi, %s!\n", name));
-    }
-
-    public static Console makeConsole() {
-        try {
-            Terminal terminal = TerminalBuilder.builder().system(true).build();
-            LineReader reader = LineReaderBuilder.builder().build();
-            AutopairWidgets autopairWidgets = new AutopairWidgets(reader, true);
-            autopairWidgets.enable();
-            return new ConsoleImpl(
-                str -> {
-                    terminal.writer().print(str);
-                    terminal.flush();
-                },
-                reader::readLine
-            );
-        } catch (IOException e) {
-            throw new ShellException(e);
-        }
     }
 }
