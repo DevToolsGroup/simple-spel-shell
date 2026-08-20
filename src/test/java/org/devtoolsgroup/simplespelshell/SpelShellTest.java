@@ -24,6 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.devtoolsgroup.simplespelshell.impl.BaseSpelShellImpl;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

@@ -22,7 +22,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package org.devtoolsgroup.simplespelshell;
+package org.devtoolsgroup.simplespelshell.impl;
+
+import org.devtoolsgroup.simplespelshell.ShellException;
+import org.devtoolsgroup.simplespelshell.ShellUtils;
+import org.devtoolsgroup.simplespelshell.WorkingDirectory;
 
 import java.io.File;
 import java.io.IOException;

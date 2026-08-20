@@ -22,8 +22,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package org.devtoolsgroup.simplespelshell;
+package org.devtoolsgroup.simplespelshell.impl;
 
+import org.devtoolsgroup.simplespelshell.Console;
+import org.devtoolsgroup.simplespelshell.CoreSpelShell;
+import org.devtoolsgroup.simplespelshell.ExpressionReader;
+import org.devtoolsgroup.simplespelshell.LineReader;
+import org.devtoolsgroup.simplespelshell.ReplConfig;
+import org.devtoolsgroup.simplespelshell.ShellException;
+import org.devtoolsgroup.simplespelshell.ShellExitException;
+import org.devtoolsgroup.simplespelshell.ShellUtils;
+import org.devtoolsgroup.simplespelshell.SpelEvaluator;
 import org.springframework.core.annotation.Order;
 
 import java.lang.reflect.Method;

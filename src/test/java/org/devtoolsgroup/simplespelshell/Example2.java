@@ -24,6 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.devtoolsgroup.simplespelshell.impl.BaseSpelShellImpl;
 import org.springframework.core.annotation.Order;
 
 public class Example2 extends BaseSpelShellImpl {

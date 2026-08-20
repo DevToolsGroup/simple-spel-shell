@@ -22,8 +22,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package org.devtoolsgroup.simplespelshell;
+package org.devtoolsgroup.simplespelshell.impl;
 
+import org.devtoolsgroup.simplespelshell.EmptyOperatorOverloader;
+import org.devtoolsgroup.simplespelshell.SpelEvaluator;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.OperatorOverloader;

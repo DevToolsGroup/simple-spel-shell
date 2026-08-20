@@ -22,8 +22,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-package org.devtoolsgroup.simplespelshell;
+package org.devtoolsgroup.simplespelshell.impl;
 
+import org.devtoolsgroup.simplespelshell.Console;
+import org.devtoolsgroup.simplespelshell.ExpressionReader;
+import org.devtoolsgroup.simplespelshell.FileSystemAwareSpelShell;
+import org.devtoolsgroup.simplespelshell.ShellException;
+import org.devtoolsgroup.simplespelshell.ShellUtils;
+import org.devtoolsgroup.simplespelshell.WorkingDirectory;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.convert.converter.Converter;
 

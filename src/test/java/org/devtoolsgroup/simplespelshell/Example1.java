@@ -24,6 +24,8 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.devtoolsgroup.simplespelshell.impl.FileSystemAwareSpelShellImpl;
+
 import java.io.File;
 import java.nio.file.Path;
 
