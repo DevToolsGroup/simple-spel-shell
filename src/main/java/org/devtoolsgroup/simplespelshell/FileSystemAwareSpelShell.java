@@ -28,7 +28,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface FileSystemAwareSpelShell {
+public interface FileSystemAwareSpelShell extends BaseSpelShell {
 
     WorkingDirectory getWorkingDirectory();
 

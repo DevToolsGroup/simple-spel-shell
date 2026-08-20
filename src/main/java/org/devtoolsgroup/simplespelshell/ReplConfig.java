@@ -31,12 +31,12 @@ import java.util.function.Function;
 
 public class ReplConfig {
 
+    private File exprHistoryFile;
+    private BiFunction<Object, String, Boolean> isCommentLine;
     private Function<Object, String> prompt;
     private BiFunction<Object, String, String> expressionInterceptor;
-    private BiFunction<Object, String, Boolean> isCommentLine;
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
     private BiConsumer<Object, Object> evalResultInterceptor;
-    private File exprHistoryFile;
     private Class<? extends Exception> stopOnException;
 
     public Function<Object, String> getPrompt() {

@@ -27,15 +27,13 @@ package org.devtoolsgroup.simplespelshell;
 import org.springframework.core.annotation.Order;
 
 import java.lang.reflect.Method;
-import java.util.Map;
-import java.util.function.Function;
 
 import static org.devtoolsgroup.simplespelshell.Example1.MainShell.DELIMITER;
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
 
 public class Example1 {
     static void main() {
-        new MainShell();
+        new MainShell().runRepl();
     }
 
     public static class MainShell extends BaseSpelShellImpl {
@@ -44,7 +42,7 @@ public class Example1 {
         public MainShell() {
             getReplConfig().setPrompt(_ -> "[main menu] SpEL> ");
             setOnExit(_ -> {
-                throw new ShellExitException();
+                throw new ShellExitException(true);
             });
         }
 
@@ -55,10 +53,7 @@ public class Example1 {
                 try {
                     super.runRepl();
                 } catch (ShellExitException ex) {
-                    if (ex.getResult() != null) {
-                        //copy all variables from the child shell to the parent shell
-                        ((Map<String, Object>) ex.getResult()).forEach(this::var);
-                    } else {
+                    if ((boolean) ex.getResult()) {
                         return null;
                     }
                 }
@@ -72,21 +67,11 @@ public class Example1 {
         }
 
         public void command1() {
-            Cmd1Shell cmd1Shell = new Cmd1Shell(getSpelEvaluator().getAllVariables());
-            Function<Object, String> origPrompt = cmd1Shell.getReplConfig().getPrompt();
-            cmd1Shell.setConsole(getConsole());
-            cmd1Shell.setReplConfig(getReplConfig());
-            cmd1Shell.getReplConfig().setPrompt(origPrompt);
-            cmd1Shell.runRepl();
+            new Cmd1Shell(this).runRepl();
         }
 
         public void command2() {
-            Cmd2Shell cmd2Shell = new Cmd2Shell(getSpelEvaluator().getAllVariables());
-            Function<Object, String> origPrompt = cmd2Shell.getReplConfig().getPrompt();
-            cmd2Shell.setConsole(getConsole());
-            cmd2Shell.setReplConfig(getReplConfig());
-            cmd2Shell.getReplConfig().setPrompt(origPrompt);
-            cmd2Shell.runRepl();
+            new Cmd2Shell(this).runRepl();
         }
     }
 
@@ -94,8 +79,8 @@ public class Example1 {
         private int number1;
         private int number2;
 
-        public Cmd1Shell(Map<String, Object> variables) {
-            variables.forEach(this::var);
+        public Cmd1Shell(BaseSpelShell parent) {
+            super(parent, parent.getConsole());
             getReplConfig().setPrompt(_ ->
                 DELIMITER +
                     "Adding numbers\n" +
@@ -104,8 +89,7 @@ public class Example1 {
                     "[adder] SpEL> "
             );
             setOnExit(_ -> {
-                //returning all variables to the parent shell
-                throw new ShellExitException(getSpelEvaluator().getAllVariables());
+                throw new ShellExitException(false);
             });
         }
 
@@ -138,8 +122,8 @@ public class Example1 {
         private int number1;
         private int number2;
 
-        public Cmd2Shell(Map<String, Object> variables) {
-            variables.forEach(this::var);
+        public Cmd2Shell(BaseSpelShell parent) {
+            super(parent, parent.getConsole());
             getReplConfig().setPrompt(_ ->
                 DELIMITER +
                     "Multiplying numbers\n" +
@@ -148,8 +132,7 @@ public class Example1 {
                     "[multiplier] SpEL> "
             );
             setOnExit(_ -> {
-                //returning all variables to the parent shell
-                throw new ShellExitException(getSpelEvaluator().getAllVariables());
+                throw new ShellExitException(false);
             });
         }
 

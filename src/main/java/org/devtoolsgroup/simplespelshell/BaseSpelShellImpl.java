@@ -61,39 +61,69 @@ public class BaseSpelShellImpl implements BaseSpelShell {
     private ReplConfig replConfigForScript;
 
     public BaseSpelShellImpl() {
-        this(new ConsoleImpl());
+        this(null);
     }
 
-    public BaseSpelShellImpl(Console console) {
-        this.console = console;
+    public BaseSpelShellImpl(BaseSpelShell parentShell) {
+        this(parentShell, new ConsoleImpl());
+    }
 
+    public BaseSpelShellImpl(BaseSpelShell parentShell, Console console) {
         internalMethods = Set.of("equals", "getClass", "hashCode", "notify", "notifyAll", "toString", "wait");
         zeroArgMethodsForRewrite = getMethodsWithNumOfArgs(0, method -> !isMethodToHideInRewrite(method));
         oneArgMethodsForRewrite = getMethodsWithNumOfArgs(1, method -> !isMethodToHideInRewrite(method));
+        this.console = console;
 
-        spelEvaluator = new SpelEvaluatorImpl();
+        if (parentShell == null) {
+            spelEvaluator = new SpelEvaluatorImpl();
 
-        replConfig = new ReplConfig();
-        replConfig.setPrompt(_ -> "SpEL> ");
-        replConfig.setExprHistoryFile(null);
-        replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(false));
-        replConfig.setIsCommentLine((_, str) -> str.trim().startsWith("//"));
-        replConfig.setExprBeforeEvalInterceptor(null);
-        replConfig.setEvalResultInterceptor((_, res) -> {
-            if (res != null) {
-                getConsole().println(ShellUtils.truncateWithEllipsis(res.toString(), 100));
+            replConfig = new ReplConfig();
+            replConfig.setExprHistoryFile(null);
+            replConfig.setIsCommentLine((_, str) -> str.trim().startsWith("//"));
+            replConfig.setPrompt(_ -> "SpEL> ");
+            replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(false));
+            replConfig.setExprBeforeEvalInterceptor(null);
+            replConfig.setEvalResultInterceptor((_, res) -> {
+                if (res != null) {
+                    getConsole().println(ShellUtils.truncateWithEllipsis(res.toString(), 100));
+                }
+            });
+            replConfig.setStopOnException(ShellExitException.class);
+
+            replConfigForScript = new ReplConfig();
+            replConfigForScript.setExprHistoryFile(null);
+            replConfigForScript.setIsCommentLine(replConfig.getIsCommentLine());
+            replConfigForScript.setPrompt(null);
+            replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(true));
+            replConfigForScript.setExprBeforeEvalInterceptor(null);
+            replConfigForScript.setEvalResultInterceptor(null);
+            replConfigForScript.setStopOnException(Exception.class);
+        } else {
+            if (this.console == null) {
+                this.console = parentShell.getConsole();
             }
-        });
-        replConfig.setStopOnException(ShellExitException.class);
+            spelEvaluator = parentShell.getSpelEvaluator();
 
-        replConfigForScript = new ReplConfig();
-        replConfigForScript.setPrompt(null);
-        replConfigForScript.setExprHistoryFile(null);
-        replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(true));
-        replConfigForScript.setIsCommentLine(replConfig.getIsCommentLine());
-        replConfigForScript.setExprBeforeEvalInterceptor(null);
-        replConfigForScript.setEvalResultInterceptor(null);
-        replConfigForScript.setStopOnException(Exception.class);
+            ReplConfig parentReplConfig = parentShell.getReplConfig();
+            replConfig = new ReplConfig();
+            replConfig.setExprHistoryFile(parentReplConfig.getExprHistoryFile());
+            replConfig.setIsCommentLine(parentReplConfig.getIsCommentLine());
+            replConfig.setPrompt(parentReplConfig.getPrompt());
+            replConfig.setExpressionInterceptor(parentReplConfig.getExpressionInterceptor());
+            replConfig.setExprBeforeEvalInterceptor(parentReplConfig.getExprBeforeEvalInterceptor());
+            replConfig.setEvalResultInterceptor(parentReplConfig.getEvalResultInterceptor());
+            replConfig.setStopOnException(parentReplConfig.getStopOnException());
+
+            ReplConfig parentReplConfigForScript = parentShell.getReplConfigForScript();
+            replConfigForScript = new ReplConfig();
+            replConfigForScript.setExprHistoryFile(parentReplConfigForScript.getExprHistoryFile());
+            replConfigForScript.setIsCommentLine(parentReplConfigForScript.getIsCommentLine());
+            replConfigForScript.setPrompt(parentReplConfigForScript.getPrompt());
+            replConfigForScript.setExpressionInterceptor(parentReplConfigForScript.getExpressionInterceptor());
+            replConfigForScript.setExprBeforeEvalInterceptor(parentReplConfigForScript.getExprBeforeEvalInterceptor());
+            replConfigForScript.setEvalResultInterceptor(parentReplConfigForScript.getEvalResultInterceptor());
+            replConfigForScript.setStopOnException(parentReplConfigForScript.getStopOnException());
+        }
     }
 
     @Order(-1000)

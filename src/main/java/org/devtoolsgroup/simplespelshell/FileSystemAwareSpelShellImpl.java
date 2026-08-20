@@ -44,7 +44,11 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     private final WorkingDirectory workingDirectory;
 
     public FileSystemAwareSpelShellImpl() {
-        this(Path.of("."), new ConsoleImpl());
+        this((FileSystemAwareSpelShell) null);
+    }
+
+    public FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell) {
+        this(parentShell, Path.of("."), new ConsoleImpl());
     }
 
     public FileSystemAwareSpelShellImpl(Path initDir) {
@@ -52,23 +56,32 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     }
 
     public FileSystemAwareSpelShellImpl(Path initDir, Console console) {
-        super(console);
-        Path absInitDir = initDir.toAbsolutePath().normalize();
-        workingDirectory = new WorkingDirectoryImpl(absInitDir);
-        workingDirectory.setCurrentDirectoryValidator(absInitDir, path -> {
-            if (!ShellUtils.isParentChild(absInitDir, path)) {
-                throw new ShellException(false, "Cannot work outside of " + absInitDir);
-            }
-        });
+        this(null, initDir, console);
+    }
 
-        List<Converter<?, ?>> typeConverters = new ArrayList<>(getSpelEvaluator().getTypeConverters());
-        typeConverters.add(new Converter<String, Path>() {
-            @Override
-            public Path convert(String first) {
-                return Path.of(first);
-            }
-        });
-        getSpelEvaluator().setTypeConverters(typeConverters);
+    public FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Path initDir, Console console) {
+        super(parentShell, console);
+
+        if (parentShell == null) {
+            List<Converter<?, ?>> typeConverters = new ArrayList<>(getSpelEvaluator().getTypeConverters());
+            typeConverters.add(new Converter<String, Path>() {
+                @Override
+                public Path convert(String first) {
+                    return Path.of(first);
+                }
+            });
+            getSpelEvaluator().setTypeConverters(typeConverters);
+
+            Path absInitDir = initDir.toAbsolutePath().normalize();
+            workingDirectory = new WorkingDirectoryImpl(absInitDir);
+            workingDirectory.setCurrentDirectoryValidator(absInitDir, path -> {
+                if (!ShellUtils.isParentChild(absInitDir, path)) {
+                    throw new ShellException(false, "Cannot work outside of " + absInitDir);
+                }
+            });
+        } else {
+            workingDirectory = parentShell.getWorkingDirectory();
+        }
     }
 
     @Order(-1000)

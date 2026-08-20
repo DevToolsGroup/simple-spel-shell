@@ -44,12 +44,8 @@ number1=1
 number2=2
 [adder] SpEL> ex
               ├ evaluating: exit()
--------------------------------
-Adding numbers
-number1=1
-number2=2
-[adder] SpEL> c2
-              ├ evaluating: command2()
+[main menu] SpEL> c2
+                  ├ evaluating: command2()
 -------------------------------
 Multiplying numbers
 number1=0
@@ -89,16 +85,8 @@ number1=3
 number2=3
 [multiplier] SpEL> ex
                    ├ evaluating: exit()
--------------------------------
-Multiplying numbers
-number1=3
-number2=3
-[multiplier] SpEL> {#sum,#prod}
-                   ├ evaluating: {#sum,#prod}
-                   └ result: [3, 9]
--------------------------------
-Multiplying numbers
-number1=3
-number2=3
-[multiplier] SpEL> ex
-                   ├ evaluating: exit()
+[main menu] SpEL> {#sum,#prod}
+                  ├ evaluating: {#sum,#prod}
+                  └ result: [3, 9]
+[main menu] SpEL> ex
+                  ├ evaluating: exit()
