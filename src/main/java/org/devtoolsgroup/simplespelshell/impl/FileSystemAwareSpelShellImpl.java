@@ -27,6 +27,7 @@ package org.devtoolsgroup.simplespelshell.impl;
 import org.devtoolsgroup.simplespelshell.Console;
 import org.devtoolsgroup.simplespelshell.ExpressionReader;
 import org.devtoolsgroup.simplespelshell.FileSystemAwareSpelShell;
+import org.devtoolsgroup.simplespelshell.NamePattern;
 import org.devtoolsgroup.simplespelshell.ShellException;
 import org.devtoolsgroup.simplespelshell.ShellUtils;
 import org.devtoolsgroup.simplespelshell.WorkingDirectory;
@@ -70,6 +71,12 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
                 @Override
                 public Path convert(String first) {
                     return Path.of(first);
+                }
+            });
+            typeConverters.add(new Converter<String, NamePattern>() {
+                @Override
+                public NamePattern convert(String pattern) {
+                    return new NamePattern(pattern);
                 }
             });
             getSpelEvaluator().setTypeConverters(typeConverters);
@@ -194,12 +201,12 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
 
     @Order(-100)
     @Override
-    public List<File> findFilesByName(String pattern) {
+    public List<File> findFilesByName(NamePattern pattern) {
         Path curDir = workingDirectory.getCurDirAbsolutePath();
         try (Stream<Path> files = Files.walk(curDir)) {
             return files
                 .filter(path -> !curDir.equals(path))
-                .filter(path -> matches(curDir.relativize(path).toString(), pattern))
+                .filter(path -> matches(curDir.relativize(path).toString(), pattern.pattern()))
                 .map(Path::toFile)
                 .toList();
         } catch (IOException e) {
@@ -209,7 +216,7 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
 
     @Order(-100)
     @Override
-    public void listFiles(String pattern) {
+    public void listFiles(NamePattern pattern) {
         printPaths(
             findFilesByName(pattern).stream()
                 .map(File::toPath)
@@ -221,12 +228,12 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     @Order(-100)
     @Override
     public void listFiles() {
-        listFiles("");
+        listFiles(new NamePattern(""));
     }
 
     @Order(-100)
     @Override
-    public void listDirs(String pattern) {
+    public void listDirs(NamePattern pattern) {
         printPaths(
             findFilesByName(pattern).stream()
                 .map(File::toPath)
@@ -238,7 +245,7 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     @Order(-100)
     @Override
     public void listDirs() {
-        listDirs("");
+        listDirs(new NamePattern(""));
     }
 
     private void printPaths(List<Path> absPaths) {

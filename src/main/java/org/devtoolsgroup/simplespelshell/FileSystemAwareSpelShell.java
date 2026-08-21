@@ -54,13 +54,13 @@ public interface FileSystemAwareSpelShell extends BaseSpelShell {
 
     void ll();
 
-    List<File> findFilesByName(String pattern);
+    List<File> findFilesByName(NamePattern pattern);
 
-    void listFiles(String pattern);
+    void listFiles(NamePattern pattern);
 
     void listFiles();
 
-    void listDirs(String pattern);
+    void listDirs(NamePattern pattern);
 
     void listDirs();
 
