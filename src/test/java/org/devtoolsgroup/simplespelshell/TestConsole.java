@@ -58,6 +58,10 @@ public class TestConsole implements Console {
             return null;
         }
         String read = lines.removeFirst();
+        while (read != null && read.isBlank()) {
+            numberOfReads++;
+            read = lines.removeFirst();
+        }
         if (debug) {
             System.out.printf("\n--------------------------------------------------\nTestConsole.read:\n%s", read);
         }

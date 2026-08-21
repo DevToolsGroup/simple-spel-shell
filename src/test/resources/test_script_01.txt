@@ -3,3 +3,6 @@
 
 // `pat gets replaced with npat('pat')
 he `len
+
+// `pat` gets replaced with npat('pat')
+he `len`

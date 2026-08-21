@@ -4,7 +4,13 @@ SpEL> 1+2
       └ result: 3
 
 // `pat gets replaced with npat('pat')
-SpEL> SpEL> he `len
+SpEL> he `len
+      ├ evaluating: help(npat('len'))
+setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
+      └ result: null
+
+// `pat` gets replaced with npat('pat')
+SpEL> he `len`
       ├ evaluating: help(npat('len'))
 setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
       └ result: null

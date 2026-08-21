@@ -72,7 +72,7 @@ public class ShellUtils {
             "|(?<=[^\\\\])(?=\\\\)|(?<=\\\\)(?=[^\\\\])" +
             "|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])"
     );
-    private static final Pattern NAME_PATTERN_PAT = Pattern.compile("`(\\S+)");
+    private static final Pattern NAME_PATTERN_PAT = pat("`([^\\s`]+)`?");
 
     public static LineReader lineReader(String text) {
         return lineReader(new BufferedReader(new StringReader(text)));

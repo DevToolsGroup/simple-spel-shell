@@ -35,10 +35,9 @@ class ShellUtilsTest {
 
     @Test
     void replaceAllNamePatterns() {
-        Assertions.assertEquals(
-            "he npat('len')",
-            ShellUtils.replaceAllNamePatterns("he `len")
-        );
+        Assertions.assertEquals("he npat('len')", ShellUtils.replaceAllNamePatterns("he `len"));
+        Assertions.assertEquals("he npat('len')", ShellUtils.replaceAllNamePatterns("he `len`"));
+        Assertions.assertEquals("he npat('len')+123", ShellUtils.replaceAllNamePatterns("he `len`+123"));
     }
 
     private void testSplit(String name, String... expectedSplit) {
