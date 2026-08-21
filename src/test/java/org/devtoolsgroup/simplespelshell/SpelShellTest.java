@@ -36,7 +36,7 @@ import java.util.function.BiFunction;
 class SpelShellTest {
 
     @Test
-    void test1() throws IOException {
+    void test1() {
         testShell(
             new BaseSpelShellImpl(),
             "test_script_01.txt",
@@ -45,7 +45,7 @@ class SpelShellTest {
     }
 
     @Test
-    void test2_submenus() throws IOException {
+    void test2_submenus() {
         testShell(
             new Example2(),
             "test_script_02_submenus.txt",
@@ -53,15 +53,25 @@ class SpelShellTest {
         );
     }
 
-    private static void testShell(
-        BaseSpelShell shell, String scriptPath, String expectedOutputPath
-    ) throws IOException {
+    private static void testShell(BaseSpelShell shell, String scriptPath, String expectedOutputPath) {
         String script = readStringFromClasspath(scriptPath);
+        TestConsole console = reconfigureShellForTest(shell, script, false);
+
+        shell.runRepl();
+
+        Assertions.assertEquals(
+            readStringFromClasspath(expectedOutputPath).trim(),
+            console.getCollectedOutput().trim()
+        );
+    }
+
+    private static TestConsole reconfigureShellForTest(BaseSpelShell shell, String script, boolean debug) {
         LineReader scriptLineReader = ShellUtils.lineReader(script);
         BiFunction<Object, String, Boolean> isCommentLine = shell.getReplConfig().getIsCommentLine();
         TestConsole console = new TestConsole(scriptLineReader, line -> isCommentLine.apply(null, line));
-//        console.setDebug(true);
+        console.setDebug(debug);
         shell.setConsole(console);
+
         BiFunction<Object, String, String> expressionInterceptorOrig = shell.getReplConfig().getExpressionInterceptor();
         shell.getReplConfig().setExpressionInterceptor((rootObj, expr) -> {
             if (expr != null && !expr.isBlank()) {
@@ -77,12 +87,7 @@ class SpelShellTest {
             console.readAndPrintComments();
         });
 
-        shell.runRepl();
-
-        Assertions.assertEquals(
-            readStringFromClasspath(expectedOutputPath).trim(),
-            console.getCollectedOutput().trim()
-        );
+        return console;
     }
 
     private static int getPromptLastLineLength(Object rootObj) {
@@ -92,9 +97,11 @@ class SpelShellTest {
         return promptParts[promptParts.length - 1].length();
     }
 
-    private static String readStringFromClasspath(String filePath) throws IOException {
+    private static String readStringFromClasspath(String filePath) {
         try (InputStream inputStream = SpelShellTest.class.getClassLoader().getResourceAsStream(filePath)) {
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new ShellException(e);
         }
     }
 }
