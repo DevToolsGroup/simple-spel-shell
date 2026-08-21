@@ -146,6 +146,10 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     @Order(-100)
     @Override
     public void mkdir(boolean autoCd, Path path) {
+        Path curDir = getWorkingDirectory().getCurDirAbsolutePath();
+        if (!ShellUtils.isParentChild(curDir, path)) {
+            throw new ShellException(false, "Cannot write outside of %s".formatted(curDir));
+        }
         if (!getFile(path).mkdirs()) {
             throw new ShellException(
                 "There was an error when creating one of the specified directories %s".formatted(path)
