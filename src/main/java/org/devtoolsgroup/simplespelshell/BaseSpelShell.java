@@ -40,13 +40,15 @@ public interface BaseSpelShell extends CoreSpelShell {
 
     void exit();
 
+    NamePattern npat(String str);
+
     Object var(String name, Object value);
 
     Object var(String name);
 
-    void var();
+    Object var(NamePattern pattern);
 
-    NamePattern npat(String str);
+    void var();
 
     void help(String filter);
 

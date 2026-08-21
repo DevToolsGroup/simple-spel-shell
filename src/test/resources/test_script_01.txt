@@ -6,3 +6,10 @@ he `len
 
 // `pat` gets replaced with npat('pat')
 he `len`
+
+// create multiple variables with long names and find them by pattern
+maximumElement=104
+minimumElement=28
+var `me
+var `mae
+var `leme

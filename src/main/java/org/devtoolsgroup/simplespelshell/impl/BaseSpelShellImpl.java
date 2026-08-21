@@ -113,6 +113,12 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     @Order(-100)
     @Override
+    public NamePattern npat(String str) {
+        return new NamePattern(str);
+    }
+
+    @Order(-100)
+    @Override
     public Object var(String name, Object value) {
         if (name == null) {
             throw new ShellException(false, "Variable name must not be null.");
@@ -129,23 +135,33 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     @Order(-100)
     @Override
-    public void var() {
-        getSpelEvaluator().getAllVariables().entrySet().stream()
-            .filter(entry -> !"$".equals(entry.getKey()))
-            .sorted(Map.Entry.comparingByKey())
-            .forEach(entry ->
-                getConsole().printf(
-                    "%s: %s\n",
-                    entry.getKey(),
-                    entry.getValue() == null ? "null" : entry.getValue().getClass().getName()
-                )
-            );
+    public Object var(NamePattern pattern) {
+        List<Map.Entry<String, Object>> found = getSpelEvaluator().getAllVariables().entrySet().stream()
+            .filter(entry -> matches(entry.getKey(), pattern.pattern()))
+            .toList();
+        if (found.size() == 1) {
+            return found.getFirst().getValue();
+        } else if (found.size() > 1) {
+            throw new ShellException(false, format(
+                "Multiple variables match the pattern '%s':\n%s",
+                pattern.pattern(),
+                printVariables(found.stream().map(Map.Entry::getKey).sorted().toList())
+            ));
+        } else {
+            throw new ShellException(false, format("No variables match the pattern '%s'.", pattern.pattern()));
+        }
     }
 
     @Order(-100)
     @Override
-    public NamePattern npat(String str) {
-        return new NamePattern(str);
+    public void var() {
+        getConsole().println(printVariables(
+                getSpelEvaluator().getAllVariables().keySet().stream()
+                    .filter(varName -> !varName.equals(lastEvalResultVarName))
+                    .sorted()
+                    .toList()
+            )
+        );
     }
 
     @Order(-100)
@@ -263,5 +279,16 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
         replConfig.setExpressionInterceptor((rootObj, expr) ->
             origExpressionInterceptor.apply(rootObj, ShellUtils.replaceAllNamePatterns(expr))
         );
+    }
+
+    private String printVariables(List<String> varNames) {
+        Map<String, Object> allVariables = getSpelEvaluator().getAllVariables();
+        return varNames.stream()
+            .filter(allVariables::containsKey)
+            .map(varName -> {
+                Object varValue = allVariables.get(varName);
+                return format("%s: %s", varName, varValue == null ? "null" : varValue.getClass().getName());
+            })
+            .collect(Collectors.joining("\n"));
     }
 }

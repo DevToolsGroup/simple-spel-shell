@@ -14,4 +14,23 @@ SpEL> he `len`
       ├ evaluating: help(npat('len'))
 setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
       └ result: null
+
+// create multiple variables with long names and find them by pattern
+SpEL> maximumElement=104
+      ├ evaluating: var('maximumElement',104)
+      └ result: 104
+SpEL> minimumElement=28
+      ├ evaluating: var('minimumElement',28)
+      └ result: 28
+SpEL> var `me
+      ├ evaluating: var(npat('me'))
+Multiple variables match the pattern 'me':
+maximumElement: java.lang.Integer
+minimumElement: java.lang.Integer
+SpEL> var `mae
+      ├ evaluating: var(npat('mae'))
+      └ result: 104
+SpEL> var `leme
+      ├ evaluating: var(npat('leme'))
+No variables match the pattern 'leme'.
 SpEL>
