@@ -110,26 +110,34 @@ public class ShellUtils {
         if (patternL.isEmpty()) {
             return true;
         }
-        String[] parts = splitForMatch(name);
         String nameL = name.toLowerCase();
-        int partIdx = 0;
-        int partBeginIdx = 0;
-        int n = 0;
-        int p = 0;
-        int maxN = name.length() - 1;
-        int maxP = pattern.length() - 1;
-        while (n <= maxN && p <= maxP) {
-            if (nameL.charAt(n) == patternL.charAt(p)) {
-                p++;
-                n++;
-            } else {
-                while (partBeginIdx <= n && partIdx < parts.length) {
-                    partBeginIdx += parts[partIdx++].length();
+        String[] parts = splitForMatch(name);
+        for (int startPartIdx = 0; startPartIdx < parts.length; startPartIdx++) {
+            int partIdx = startPartIdx;
+            int partBeginIdx = 0;
+            for (int j = 0; j < partIdx; j++) {
+                partBeginIdx += parts[j].length();
+            }
+            int n = 0;
+            int p = 0;
+            int maxN = name.length() - 1;
+            int maxP = pattern.length() - 1;
+            while (n <= maxN && p <= maxP) {
+                if (nameL.charAt(n) == patternL.charAt(p)) {
+                    p++;
+                    n++;
+                } else {
+                    while (partBeginIdx <= n && partIdx < parts.length) {
+                        partBeginIdx += parts[partIdx++].length();
+                    }
+                    n = partBeginIdx;
                 }
-                n = partBeginIdx;
+            }
+            if (p > maxP) {
+                return true;
             }
         }
-        return p > maxP;
+        return false;
     }
 
     public static String rewriteExpr(String expr, List<String> zeroArgMethods, List<String> oneArgMethods) {

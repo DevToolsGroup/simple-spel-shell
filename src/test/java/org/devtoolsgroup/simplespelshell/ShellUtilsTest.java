@@ -19,6 +19,12 @@ class ShellUtilsTest {
         testSplit("path\\to\\file", "path", "\\", "to", "\\", "file");
     }
 
+    @Test
+    void matches() {
+        Assertions.assertTrue(ShellUtils.matches("setLastEvalResultMaxPrintLength", "len"));
+        Assertions.assertTrue(ShellUtils.matches("setLastEvalResultMaxPrintLength", "llen"));
+    }
+
     private void testSplit(String name, String... expectedSplit) {
         Assertions.assertArrayEquals(expectedSplit, ShellUtils.splitForMatch(name));
     }
