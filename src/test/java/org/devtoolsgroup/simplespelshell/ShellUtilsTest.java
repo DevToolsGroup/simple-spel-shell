@@ -23,6 +23,14 @@ class ShellUtilsTest {
     void matches() {
         Assertions.assertTrue(ShellUtils.matches("setLastEvalResultMaxPrintLength", "len"));
         Assertions.assertTrue(ShellUtils.matches("setLastEvalResultMaxPrintLength", "llen"));
+        Assertions.assertTrue(ShellUtils.matches("setLastEvalResultAbsPrintLength", "lablen"));
+        Assertions.assertTrue(ShellUtils.matches("setLastEvalResultAbsPrintLength", "lablen"));
+        Assertions.assertTrue(ShellUtils.matches("ab-cd-ef", "aef"));
+        Assertions.assertTrue(ShellUtils.matches("ab-cd-ef", ""));
+        Assertions.assertTrue(ShellUtils.matches("abc-cef", "abce"));
+        Assertions.assertFalse(ShellUtils.matches("abc-cef", "abe"));
+        Assertions.assertTrue(ShellUtils.matches("ab-cd-ef", "abcdef"));
+        Assertions.assertFalse(ShellUtils.matches("ab-cd-ef", "abcdef1"));
     }
 
     private void testSplit(String name, String... expectedSplit) {

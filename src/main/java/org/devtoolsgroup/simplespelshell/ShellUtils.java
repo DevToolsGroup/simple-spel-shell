@@ -110,30 +110,30 @@ public class ShellUtils {
         if (patternL.isEmpty()) {
             return true;
         }
-        String nameL = name.toLowerCase();
+        if (name.length() < pattern.length()) {
+            return false;
+        }
         String[] parts = splitForMatch(name);
-        for (int startPartIdx = 0; startPartIdx < parts.length; startPartIdx++) {
-            int partIdx = startPartIdx;
-            int partBeginIdx = 0;
-            for (int j = 0; j < partIdx; j++) {
-                partBeginIdx += parts[j].length();
-            }
-            int n = 0;
-            int p = 0;
-            int maxN = name.length() - 1;
-            int maxP = pattern.length() - 1;
-            while (n <= maxN && p <= maxP) {
-                if (nameL.charAt(n) == patternL.charAt(p)) {
-                    p++;
-                    n++;
-                } else {
-                    while (partBeginIdx <= n && partIdx < parts.length) {
-                        partBeginIdx += parts[partIdx++].length();
+        int patLen = pattern.length();
+        // how many first characters of the pattern can be formed using the parts processed so far.
+        int patPrefixLen = 0;
+        for (String part : parts) {
+            int maxP = patPrefixLen;
+            int partLen = part.length();
+            for (int p = Math.max(0, patPrefixLen - partLen + 1); p <= maxP && patPrefixLen < patLen; p++) {
+                int maxLen = Math.min(partLen, patLen - p);
+                for (int i = 0; i < maxLen; i++) {
+                    int pi = p + i;
+                    if (Character.toLowerCase(part.charAt(i)) == patternL.charAt(pi)) {
+                        if (pi + 1 > patPrefixLen) {
+                            patPrefixLen = pi + 1;
+                        }
+                    } else {
+                        break;
                     }
-                    n = partBeginIdx;
                 }
             }
-            if (p > maxP) {
+            if (patPrefixLen == patLen) {
                 return true;
             }
         }
