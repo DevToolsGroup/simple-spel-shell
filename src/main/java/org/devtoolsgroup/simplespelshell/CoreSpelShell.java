@@ -47,4 +47,6 @@ public interface CoreSpelShell {
     ReplConfig getReplConfigForScript();
 
     void setReplConfigForScript(ReplConfig replConfigForScript);
+
+    void setLastEvalResultVarName(String varName);
 }

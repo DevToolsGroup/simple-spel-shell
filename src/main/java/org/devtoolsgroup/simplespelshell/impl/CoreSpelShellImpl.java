@@ -56,6 +56,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
 
     private final SpelEvaluator spelEvaluator;
     protected Object lastEvalResult;
+    protected String lastEvalResultVarName = "$";
 
     private Console console;
     private ReplConfig replConfig;
@@ -193,6 +194,12 @@ public class CoreSpelShellImpl implements CoreSpelShell {
 
     @Order(-1000)
     @Override
+    public void setLastEvalResultVarName(String varName) {
+        lastEvalResultVarName = varName;
+    }
+
+    @Order(-1000)
+    @Override
     public SpelEvaluator getSpelEvaluator() {
         return spelEvaluator;
     }
@@ -236,7 +243,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
                     exprBeforeEvalInterceptor.accept(rootObject, expr);
                 }
                 lastEvalResult = spelEvaluator.evaluate(rootObject, expr);
-                spelEvaluator.addVariable("$", lastEvalResult);
+                spelEvaluator.addVariable(lastEvalResultVarName, lastEvalResult);
                 if (evalResultInterceptor != null) {
                     evalResultInterceptor.accept(rootObject, lastEvalResult);
                 }
