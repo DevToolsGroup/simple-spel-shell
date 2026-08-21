@@ -26,6 +26,8 @@ package org.devtoolsgroup.simplespelshell.impl;
 
 import org.devtoolsgroup.simplespelshell.BaseSpelShell;
 import org.devtoolsgroup.simplespelshell.Console;
+import org.devtoolsgroup.simplespelshell.NamePattern;
+import org.devtoolsgroup.simplespelshell.ReplConfig;
 import org.devtoolsgroup.simplespelshell.ShellException;
 import org.devtoolsgroup.simplespelshell.ShellUtils;
 import org.springframework.core.annotation.Order;
@@ -36,6 +38,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -62,7 +65,10 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     public BaseSpelShellImpl(BaseSpelShell parentShell, Console console) {
         super(parentShell, console);
-        if (parentShell != null) {
+        if (parentShell == null) {
+            addNamePatternRewriter(getReplConfig());
+            addNamePatternRewriter(getReplConfigForScript());
+        } else {
             minOrderForHelp = parentShell.getMinOrderForHelp();
         }
     }
@@ -138,6 +144,12 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     @Order(-100)
     @Override
+    public NamePattern npat(String str) {
+        return new NamePattern(str);
+    }
+
+    @Order(-100)
+    @Override
     public void help(String pattern) {
         AtomicInteger prevOrder = new AtomicInteger(Integer.MAX_VALUE);
         Function<Method, String> methodNameGetter = Method::getName;
@@ -161,6 +173,12 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
                 return (String.format("%s%s(%s): %s", delim, name, params, returnType));
             })
             .forEach(getConsole()::println);
+    }
+
+    @Order(-100)
+    @Override
+    public void help(NamePattern pattern) {
+        help(pattern.pattern());
     }
 
     @Order(-100)
@@ -238,5 +256,12 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     protected boolean isMethodToHideInHelp(Method method) {
         return internalMethods.contains(method.getName()) || getSortOrder(method) < minOrderForHelp;
+    }
+
+    private void addNamePatternRewriter(ReplConfig replConfig) {
+        BiFunction<Object, String, String> origExpressionInterceptor = replConfig.getExpressionInterceptor();
+        replConfig.setExpressionInterceptor((rootObj, expr) ->
+            origExpressionInterceptor.apply(rootObj, ShellUtils.replaceAllNamePatterns(expr))
+        );
     }
 }

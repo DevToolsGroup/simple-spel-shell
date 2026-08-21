@@ -24,53 +24,5 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
-import java.util.function.Consumer;
-
-public interface BaseSpelShell extends CoreSpelShell {
-
-    void setOnExit(Consumer<Object> onExit);
-
-    Consumer<Object> getOnExit();
-
-    void setMinOrderForHelp(int minOrderForHelp);
-
-    int getMinOrderForHelp();
-
-    void exit(Object result);
-
-    void exit();
-
-    Object var(String name, Object value);
-
-    Object var(String name);
-
-    void var();
-
-    NamePattern npat(String str);
-
-    void help(String filter);
-
-    void help(NamePattern pattern);
-
-    void help();
-
-    void hist(int num);
-
-    void hist();
-
-    void hist(String filter);
-
-    void print(Object obj);
-
-    void println(Object obj);
-
-    void printf(String format, Object... args);
-
-    String format(String format, Object... args);
-
-    String prompt(String prompt);
-
-    void exn(String msg);
-
-    void exnf(String format, Object... args);
+public record NamePattern(String pattern) {
 }

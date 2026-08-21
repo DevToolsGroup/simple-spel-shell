@@ -72,6 +72,7 @@ public class ShellUtils {
             "|(?<=[^\\\\])(?=\\\\)|(?<=\\\\)(?=[^\\\\])" +
             "|(?<=[0-9])(?=[^0-9])|(?<=[^0-9])(?=[0-9])"
     );
+    private static final Pattern NAME_PATTERN_PAT = Pattern.compile("`(\\S+)");
 
     public static LineReader lineReader(String text) {
         return lineReader(new BufferedReader(new StringReader(text)));
@@ -223,6 +224,13 @@ public class ShellUtils {
 
     public static Consumer<Object> exnExit() {
         return exnExit(null);
+    }
+
+    public static String replaceAllNamePatterns(String str) {
+        if (str == null) {
+            return null;
+        }
+        return NAME_PATTERN_PAT.matcher(str).replaceAll("npat('$1')");
     }
 
     private static String findMethodByPattern(List<String> methods, String pattern) {

@@ -33,6 +33,14 @@ class ShellUtilsTest {
         Assertions.assertFalse(ShellUtils.matches("ab-cd-ef", "abcdef1"));
     }
 
+    @Test
+    void replaceAllNamePatterns() {
+        Assertions.assertEquals(
+            "he npat('len')",
+            ShellUtils.replaceAllNamePatterns("he `len")
+        );
+    }
+
     private void testSplit(String name, String... expectedSplit) {
         Assertions.assertArrayEquals(expectedSplit, ShellUtils.splitForMatch(name));
     }

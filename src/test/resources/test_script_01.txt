@@ -1,2 +1,5 @@
 // a simple expression
 1+2
+
+// `pat gets replaced with npat('pat')
+he `len
