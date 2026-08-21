@@ -57,6 +57,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     private final SpelEvaluator spelEvaluator;
     protected Object lastEvalResult;
     protected String lastEvalResultVarName = "$";
+    protected int lastEvalResultMaxPrintLength = 100;
 
     private Console console;
     private ReplConfig replConfig;
@@ -79,7 +80,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             replConfig.setExprBeforeEvalInterceptor(null);
             replConfig.setEvalResultInterceptor((_, res) -> {
                 if (res != null) {
-                    getConsole().println(ShellUtils.truncateWithEllipsis(res.toString(), 100));
+                    getConsole().println(ShellUtils.truncateWithEllipsis(res.toString(), lastEvalResultMaxPrintLength));
                 }
             });
             replConfig.setStopOnException(ShellExitException.class);
@@ -196,6 +197,12 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     @Override
     public void setLastEvalResultVarName(String varName) {
         lastEvalResultVarName = varName;
+    }
+
+    @Order(-100)
+    @Override
+    public void setLastEvalResultMaxPrintLength(int lastEvalResultMaxPrintLength) {
+        this.lastEvalResultMaxPrintLength = lastEvalResultMaxPrintLength;
     }
 
     @Order(-1000)

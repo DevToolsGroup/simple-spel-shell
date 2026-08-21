@@ -34,6 +34,8 @@ public interface CoreSpelShell {
 
     Object eval(Object rootObject, String expression);
 
+    void setLastEvalResultMaxPrintLength(int lastEvalResultMaxPrintLength);
+
     SpelEvaluator getSpelEvaluator();
 
     Console getConsole();
