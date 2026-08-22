@@ -135,21 +135,15 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
 
     @Order(-100)
     @Override
-    public Object var(NamePattern pattern) {
-        List<Map.Entry<String, Object>> found = getSpelEvaluator().getAllVariables().entrySet().stream()
-            .filter(entry -> matches(entry.getKey(), pattern.pattern()))
-            .toList();
-        if (found.size() == 1) {
-            return found.getFirst().getValue();
-        } else if (found.size() > 1) {
-            throw new ShellException(false, format(
-                "Multiple variables match the pattern '%s':\n%s",
-                pattern.pattern(),
-                printVariables(found.stream().map(Map.Entry::getKey).sorted().toList())
-            ));
-        } else {
-            throw new ShellException(false, format("No variables match the pattern '%s'.", pattern.pattern()));
-        }
+    public void var(NamePattern pattern) {
+        getConsole().println(
+            printVariables(
+                getSpelEvaluator().getAllVariables().keySet().stream()
+                    .filter(varName -> matches(varName, pattern.pattern()))
+                    .sorted()
+                    .toList()
+            )
+        );
     }
 
     @Order(-100)

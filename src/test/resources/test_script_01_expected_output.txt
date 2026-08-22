@@ -24,13 +24,15 @@ SpEL> minimumElement=28
       └ result: 28
 SpEL> var `me
       ├ evaluating: var(npat('me'))
-Multiple variables match the pattern 'me':
 maximumElement: java.lang.Integer
 minimumElement: java.lang.Integer
+      └ result: null
 SpEL> var `mae
       ├ evaluating: var(npat('mae'))
-      └ result: 104
+maximumElement: java.lang.Integer
+      └ result: null
 SpEL> var `leme
       ├ evaluating: var(npat('leme'))
-No variables match the pattern 'leme'.
+
+      └ result: null
 SpEL>

@@ -46,7 +46,7 @@ public interface BaseSpelShell extends CoreSpelShell {
 
     Object var(String name);
 
-    Object var(NamePattern pattern);
+    void var(NamePattern pattern);
 
     void var();
 
