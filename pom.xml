@@ -6,7 +6,7 @@
 
     <groupId>org.devtoolsgroup.simplespelshell</groupId>
     <artifactId>simple-spel-shell</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.1</version>
 
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
