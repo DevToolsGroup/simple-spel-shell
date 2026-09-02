@@ -1,6 +1,9 @@
 // a simple expression
 1+2
 
+//getting a list of available methods
+help
+
 // `pat gets replaced with npat('pat')
 he `len
 

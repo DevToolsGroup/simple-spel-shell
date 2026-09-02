@@ -162,17 +162,21 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
     @Override
     public void help(String pattern) {
         AtomicInteger prevOrder = new AtomicInteger(Integer.MAX_VALUE);
-        Function<Method, String> methodNameGetter = Method::getName;
+        Function<Object[], Integer> methodOrder = methodAndStr -> ShellUtils.getSortOrder((Method) methodAndStr[0]);
+        Function<Object[], Integer> methodNumOfArgs = methodAndStr -> ((Method) methodAndStr[0]).getParameters().length;
+        Function<Object[], String> methodName = methodAndStr -> ((Method) methodAndStr[0]).getName();
+        Function<Object[], String> methodStrRepresentation = methodAndStr -> (String) methodAndStr[1];
         getExposedMethods(method -> !isMethodToHideInHelp(method))
             .filter(method -> matches(method.getName(), pattern))
-            .sorted(Comparator.comparing(ShellUtils::getSortOrder).thenComparing(methodNameGetter))
-            .map(method -> {
-                String params = Arrays.stream(method.getParameters())
-                    .map(param -> "%s: %s".formatted(param.getName(), param.getType().getName()))
-                    .collect(Collectors.joining(", "));
-                String returnType = method.getReturnType().getName();
-                String name = method.getName();
-                int thisOrder = getSortOrder(method);
+            .map(method -> new Object[]{method, methodToStr(method)})
+            .sorted(
+                Comparator.comparing(methodOrder)
+                    .thenComparing(methodName)
+                    .thenComparing(methodNumOfArgs)
+                    .thenComparing(methodStrRepresentation)
+            )
+            .map(methodAndStr -> {
+                int thisOrder = getSortOrder((Method) methodAndStr[0]);
                 String delim;
                 if (prevOrder.get() < 0 && thisOrder >= 0) {
                     delim = "---\n";
@@ -180,7 +184,7 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
                     delim = "";
                 }
                 prevOrder.set(thisOrder);
-                return (String.format("%s%s(%s): %s", delim, name, params, returnType));
+                return (String.format("%s%s", delim, methodAndStr[1]));
             })
             .forEach(getConsole()::println);
     }
@@ -284,5 +288,14 @@ public class BaseSpelShellImpl extends CoreSpelShellImpl implements BaseSpelShel
                 return format("%s: %s", varName, varValue == null ? "null" : varValue.getClass().getName());
             })
             .collect(Collectors.joining("\n"));
+    }
+
+    private String methodToStr(Method method) {
+        String params = Arrays.stream(method.getParameters())
+            .map(param -> "%s: %s".formatted(param.getName(), param.getType().getSimpleName()))
+            .collect(Collectors.joining(", "));
+        String returnType = method.getReturnType().getSimpleName();
+        String name = method.getName();
+        return (String.format("%s(%s): %s", name, params, returnType));
     }
 }

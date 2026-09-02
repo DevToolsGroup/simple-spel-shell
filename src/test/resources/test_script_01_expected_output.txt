@@ -3,6 +3,35 @@ SpEL> 1+2
       ├ evaluating: 1+2
       └ result: 3
 
+//getting a list of available methods
+SpEL> help
+      ├ evaluating: help()
+eval(rootObject: Object, expression: String): Object
+exit(): void
+exit(result: Object): void
+exn(msg: String): void
+exnf(format: String, args: Object[]): void
+format(format: String, args: Object[]): String
+help(): void
+help(pattern: NamePattern): void
+help(pattern: String): void
+hist(): void
+hist(num: int): void
+hist(substring: String): void
+npat(str: String): NamePattern
+print(obj: Object): void
+printf(format: String, args: Object[]): void
+println(obj: Object): void
+prompt(prompt: String): String
+runScript(script: String): Object
+runScript(scriptLineReader: LineReader): Object
+setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
+var(): void
+var(name: String): Object
+var(pattern: NamePattern): void
+var(name: String, value: Object): Object
+      └ result: null
+
 // `pat gets replaced with npat('pat')
 SpEL> he `len
       ├ evaluating: help(npat('len'))
