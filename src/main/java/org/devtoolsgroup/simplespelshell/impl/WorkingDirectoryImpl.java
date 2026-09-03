@@ -92,13 +92,14 @@ public class WorkingDirectoryImpl implements WorkingDirectory {
             throw new ShellException("Cannot write text to %s because it is a directory".formatted(fileToWriteTo));
         }
         File parentDir = fileToWriteTo.getParentFile();
-        if (parentDir.exists() || parentDir.mkdirs()) {
+        if (!parentDir.exists() && !parentDir.mkdirs()) {
+            throw new ShellException("There was an error when creating parent directories %s".formatted(parentDir));
+        } else {
             try {
                 Files.writeString(fileToWriteTo.toPath(), text, StandardCharsets.UTF_8);
             } catch (IOException e) {
                 throw new ShellException(e);
             }
         }
-        throw new ShellException("There was an error when creating parent directories %s".formatted(parentDir));
     }
 }
