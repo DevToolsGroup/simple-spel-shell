@@ -40,7 +40,8 @@ Running it gives you an interactive prompt where `sayHi`, `help`, `var`, and any
 
 ## Requirements
 
-- Java 25+
+- Java 25+ (the project builds and targets Java 25 out of the box).
+- Lower Java versions can be used, but require small source changes first: the codebase uses unnamed lambda parameters (`_ -> ...`), which need to be given a real parameter name on older Java versions, and `List.getFirst()`/`removeFirst()`, which need to be replaced with equivalents like `list.get(0)`/`list.remove(0)`.
 
 ## Installation
 
