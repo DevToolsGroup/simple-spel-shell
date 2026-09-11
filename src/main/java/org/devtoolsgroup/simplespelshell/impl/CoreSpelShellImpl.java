@@ -274,10 +274,11 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             String rewrittenExpr = ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
             ReplConfig config = forScript ? shell.getReplConfigForScript() : shell.getReplConfig();
             if (
-                config.getExprHistoryFile() != null
+                config.getExprHistoryFile() != null && rewrittenExpr != null
                     && !rewrittenExpr.startsWith("hist(")
                     && !rewrittenExpr.startsWith("help(")
                     && !rewrittenExpr.startsWith("exit(")
+                    && !rewrittenExpr.isBlank()
             ) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }
