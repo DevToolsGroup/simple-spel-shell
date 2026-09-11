@@ -24,6 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell.impl;
 
+import org.devtoolsgroup.simplespelshell.BasicOperatorOverloader;
 import org.devtoolsgroup.simplespelshell.Console;
 import org.devtoolsgroup.simplespelshell.ExpressionReader;
 import org.devtoolsgroup.simplespelshell.FileSystemAwareSpelShell;
@@ -80,6 +81,7 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
                 }
             });
             getSpelEvaluator().setTypeConverters(typeConverters);
+            getSpelEvaluator().setOperatorOverloader(new BasicOperatorOverloader());
 
             Path absInitDir = initDir.toAbsolutePath().normalize();
             workingDirectory = new WorkingDirectoryImpl(absInitDir);
