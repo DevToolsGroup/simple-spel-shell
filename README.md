@@ -38,6 +38,10 @@ public class MyShell extends BaseSpelShellImpl {
 
 Running it gives you an interactive prompt where `sayHi`, `help`, `var`, and any other exposed method can be invoked directly — and so can raw SpEL, like `1+2` or `{1,2,3}`.
 
+## Learn more
+
+See the [full tutorial](docs/index.md) for a step-by-step guide that builds a small CLI tool from scratch and gradually introduces every feature — from command shorthand and fuzzy matching to sub-shells, custom type converters, and operator overloading.
+
 ## Requirements
 
 - Java 25+ (the project builds and targets Java 25 out of the box).
