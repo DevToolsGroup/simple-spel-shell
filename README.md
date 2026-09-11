@@ -41,7 +41,24 @@ Running it gives you an interactive prompt where `sayHi`, `help`, `var`, and any
 ## Requirements
 
 - Java 25+
-- Maven coordinates: `org.devtoolsgroup.simplespelshell:simple-spel-shell`
+
+## Installation
+
+This project is not published to any Maven repository yet. To use it, clone this repository and install it into your local Maven repository:
+
+```shell
+mvn install
+```
+
+Then add it as a dependency in your project's `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>org.devtoolsgroup.simplespelshell</groupId>
+    <artifactId>simple-spel-shell</artifactId>
+    <version>0.0.4-SNAPSHOT</version>
+</dependency>
+```
 
 ## License
 
