@@ -57,7 +57,7 @@ Then add it as a dependency in your project's `pom.xml`:
 <dependency>
     <groupId>org.devtoolsgroup.simplespelshell</groupId>
     <artifactId>simple-spel-shell</artifactId>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.6-SNAPSHOT</version>
 </dependency>
 ```
 
