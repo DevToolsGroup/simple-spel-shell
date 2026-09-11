@@ -6,6 +6,9 @@
 # working directory. See project conventions in git history (e.g. commits
 # 94a9c888 and 81d71da0) for the version-bumping pattern this follows.
 
+#not reviewed
+exit 1
+
 set -Eeuo pipefail
 
 trap 'echo "release.sh: failed at line ${LINENO}" >&2' ERR
