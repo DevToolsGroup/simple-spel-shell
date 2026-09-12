@@ -8,13 +8,15 @@ to receive input from its caller. Any data has to flow in through global shell s
 (variables set with `var(...)` before the call), which is awkward and leaks state the
 script didn't ask for.
 
-This feature adds an *args* parameter to every `runScript(...)` overload. The value
-passed in is made available inside the script as the SpEL variable `#_`, without
-clobbering the args of whichever script (if any) is already running when the nested
-call is made. Scripts can therefore be written as small, parameterized units of work and
-composed by calling one script from another, each with its own args, the same way a
-Java method call passes arguments down a call stack without disturbing its caller's
-locals.
+This feature adds an *args* parameter to every `runScript(...)` overload, and to
+`runRepl()` as well. The value passed in is made available inside the script (or the
+interactive session) as the SpEL variable `#_`, without clobbering the args of
+whichever script/REPL (if any) is already running when the nested call is made. Scripts
+can therefore be written as small, parameterized units of work and composed by calling
+one script from another, each with its own args, the same way a Java method call passes
+arguments down a call stack without disturbing its caller's locals. `runRepl(Object)`
+lets an interactive session started from within a script or a command (e.g. a sub-shell
+menu) receive args the same way.
 
 `args` is untyped (`Object`) — a single value, a `Map`, a custom object, whatever the
 caller finds convenient — and it is entirely up to the script to know what shape to
@@ -23,10 +25,11 @@ expect.
 ## 2. How it can be used
 
 Every existing `runScript` overload gains a sibling that takes an `Object args`
-parameter:
+parameter, and so does `runRepl`:
 
 ```java
 // CoreSpelShell
+Object runRepl(Object args);
 Object runScript(String script, Object args);
 Object runScript(LineReader scriptLineReader, Object args);
 
@@ -114,18 +117,18 @@ is involved.
 
 ### Every overload manages the stack, uniformly
 
-All four `runScript` overloads — `runScript(String)`, `runScript(LineReader)`,
+All five entry points — `runRepl()`, `runScript(String)`, `runScript(LineReader)`,
 `runScript(Path)`, and their new `Object args` siblings — must push and pop, including
 the no-args ones. A no-args call pushes `null` explicitly rather than leaving the
-caller's args silently visible to the nested script. Without this, a script called
-without args from inside a script that has args would still see the *outer* script's
-`#_` (since nothing overrode it), which would be a surprising, easy-to-miss form of
-state leakage.
+caller's args silently visible to the nested script/REPL. Without this, a script (or a
+nested REPL) called without args from inside a script that has args would still see the
+*outer* script's `#_` (since nothing overrode it), which would be a surprising,
+easy-to-miss form of state leakage.
 
 To avoid duplicating (and risking inconsistently implementing) the push/pop logic in
-four different methods, each no-args overload simply delegates to its args-taking
-sibling with `null`, and the args-taking overloads share one private helper that wraps
-the actual script run:
+five different methods, each no-args overload simply delegates to its args-taking
+sibling with `null`, and every args-taking overload shares one private helper that wraps
+the actual run:
 
 ```java
 // CoreSpelShellImpl
@@ -138,23 +141,25 @@ public Object runScript(String script, Object args) {
         ShellUtils.lineReader(script),
         line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
     );
-    return runScriptWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
+    return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
 }
 
-// shared by all *(..., Object args)* overloads, incl. the one in FileSystemAwareSpelShellImpl
-protected Object runScriptWithArgs(Object args, Supplier<Object> scriptRunner) {
+// shared by runRepl(Object) and every runScript(..., Object) overload,
+// incl. the one in FileSystemAwareSpelShellImpl
+protected Object runWithArgs(Object args, Supplier<Object> action) {
     getSpelEvaluator().pushArgs(args);
     try {
-        return scriptRunner.get();
+        return action.get();
     } finally {
         getSpelEvaluator().popArgs();
     }
 }
 ```
 
-`runScript(LineReader, Object)` (in `CoreSpelShellImpl`) and `runScript(Path, Object)`
-(in `FileSystemAwareSpelShellImpl`) follow the same shape: build the
-`ExpressionReader` as before, then run it through `runScriptWithArgs`.
+`runRepl(Object)`, `runScript(LineReader, Object)` (both in `CoreSpelShellImpl`), and
+`runScript(Path, Object)` (in `FileSystemAwareSpelShellImpl`) follow the same shape:
+build the `ExpressionReader` (or reuse the console, for `runRepl`) as before, then run
+it through `runWithArgs`.
 
 ### Exception safety
 
@@ -162,11 +167,11 @@ protected Object runScriptWithArgs(Object args, Supplier<Object> scriptRunner) {
 `runRepl(replConfigForScript, ...)` rethrows on *any* exception raised while evaluating
 a script line, rather than swallowing it the way the interactive REPL loop does. That
 means a failing script unwinds straight out of `runScript(...)` (and, for nested calls,
-back out through every enclosing `runScript(...)` on the Java call stack). The
-`try { ... } finally { popArgs(); }` in `runScriptWithArgs` is what keeps the args stack
-correct in that case: no matter how a script's execution ends — normal completion or an
+back out through every enclosing `runScript(...)`/`runRepl(...)` on the Java call
+stack). The `try { ... } finally { popArgs(); }` in `runWithArgs` is what keeps the args
+stack correct in that case: no matter how a run ends — normal completion or an
 exception propagating out — its args entry is always popped and the caller's `#_` is
-always restored before control leaves `runScript(...)`.
+always restored before control leaves `runScript(...)`/`runRepl(...)`.
 
 ### Why `#_` is a safe choice of name
 
