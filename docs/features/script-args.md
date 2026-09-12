@@ -10,17 +10,21 @@ script didn't ask for.
 
 This feature adds an *args* parameter to every `runScript(...)` overload, and to
 `runRepl()` as well. The value passed in is made available inside the script (or the
-interactive session) as the SpEL variable `#_`, without clobbering the args of
-whichever script/REPL (if any) is already running when the nested call is made. Scripts
-can therefore be written as small, parameterized units of work and composed by calling
-one script from another, each with its own args, the same way a Java method call passes
-arguments down a call stack without disturbing its caller's locals. `runRepl(Object)`
-lets an interactive session started from within a script or a command (e.g. a sub-shell
-menu) receive args the same way.
+interactive session) as the SpEL variable `#_` by default, without clobbering the args
+of whichever script/REPL (if any) is already running when the nested call is made.
+Scripts can therefore be written as small, parameterized units of work and composed by
+calling one script from another, each with its own args, the same way a Java method call
+passes arguments down a call stack without disturbing its caller's locals.
+`runRepl(Object)` lets an interactive session started from within a script or a command
+(e.g. a sub-shell menu) receive args the same way.
 
 `args` is untyped (`Object`) — a single value, a `Map`, a custom object, whatever the
 caller finds convenient — and it is entirely up to the script to know what shape to
 expect.
+
+The name of the variable used to expose the args (`_` by default) is configurable, via
+`SpelEvaluator.setScriptArgsVarName(String)`, in case `_` collides with something a
+particular application wants to use for its own purposes.
 
 ## 2. How it can be used
 
@@ -69,51 +73,79 @@ runScript('inner.spel', 'inner-args')
 print('outer args again: ' + #_)   // still 'outer-args', unaffected by the nested call
 ```
 
+### Using a variable name other than `_`
+
+If `_` isn't a good fit (e.g. it's already used for something else in a particular
+application), the variable name can be changed via the shared `SpelEvaluator`:
+
+```java
+shell.getSpelEvaluator().setScriptArgsVarName("args");
+shell.runScript(Path.of("greet.spel"), Map.of("name", "Ada")); // now read inside as #args
+```
+
+`getScriptArgsVarName()` returns whatever name is currently configured (`"_"` unless
+changed). The name is expected to be set once, up front — e.g. right after constructing
+the root shell — rather than changed while scripts are already running; see
+[Implementation details](#3-implementation-details) for why.
+
 ## 3. Implementation details
 
 ### Where the args live
 
-A script's args are exposed through the *same* `#_` SpEL variable regardless of
-nesting depth — there's only ever one `_` in the evaluation context at a time. What
-changes across nested `runScript(...)` calls is *what value* `_` currently holds, and
-that's tracked with an explicit stack, one entry per currently-running script, with the
-top of the stack always mirroring the live value of `#_`.
+A script's args are exposed through a *single* SpEL variable regardless of nesting
+depth — there's only ever one active args variable in the evaluation context at a time.
+What changes across nested `runScript(...)` calls is *what value* that variable
+currently holds, and that's tracked with an explicit stack, one entry per
+currently-running script, with the top of the stack always mirroring the live value of
+the args variable.
 
-The stack cannot live on `CoreSpelShellImpl` (or any subclass) as a plain instance
-field. Sub-shells opened for menus/sub-shells are separate shell objects, each with
-their own instance fields, but they all share a single `SpelEvaluator` instance —
-handed down as `spelEvaluator = parentShell.getSpelEvaluator()` in
-`CoreSpelShellImpl`'s constructor. If `runScript(...)` is called from within such a
-sub-shell while a running script (started on a different shell instance) is on the
-call stack, a stack field on the shell class would not be the same stack the outer
-script pushed onto. So the args stack is added to `SpelEvaluatorImpl`, next to
-`variables`/`spelCtx`, which is the one thing already shared correctly across the whole
-shell tree. It is not exposed as another shell-visible "variable" — it is private
-state, separate from the `variables` map used by `var()`/`getVariable()`/
-`getAllVariables()`.
+The stack (and the name of the variable it's synced to) cannot live on
+`CoreSpelShellImpl` (or any subclass) as a plain instance field. Sub-shells opened for
+menus/sub-shells are separate shell objects, each with their own instance fields, but
+they all share a single `SpelEvaluator` instance — handed down as
+`spelEvaluator = parentShell.getSpelEvaluator()` in `CoreSpelShellImpl`'s constructor.
+If `runScript(...)` is called from within such a sub-shell while a running script
+(started on a different shell instance) is on the call stack, a stack field on the
+shell class would not be the same stack the outer script pushed onto, and a configured
+variable-name field on the shell class would not be visible to the sub-shell either. So
+both the args stack and the configured variable name live on `SpelEvaluatorImpl`, next
+to `variables`/`spelCtx`, which is the one thing already shared correctly across the
+whole shell tree — meaning a sub-shell automatically sees whatever name (and whatever
+in-progress args) the rest of the tree is using, with no copying needed. The stack
+itself is not exposed as another shell-visible "variable" — it is private state,
+separate from the `variables` map used by `var()`/`getVariable()`/`getAllVariables()`.
 
-`SpelEvaluator` gets two new methods to encapsulate it:
+`SpelEvaluator` gets four new methods:
 
 ```java
 void pushArgs(Object args);
 void popArgs();
+String getScriptArgsVarName();
+void setScriptArgsVarName(String varName);
 ```
 
-`SpelEvaluatorImpl` adds a `Deque<Object> argsStack` and a constant
-`SCRIPT_ARGS_VAR_NAME = "_"`:
+`SpelEvaluatorImpl` adds a `Deque<Object> argsStack` and a mutable
+`scriptArgsVarName` field, defaulting to `"_"`:
 
 - **`pushArgs(args)`** — if the stack is non-empty, first writes the *current* value of
-  `#_` (read back via `getVariable(SCRIPT_ARGS_VAR_NAME)`) into the entry that's
-  currently on top, so that any mutation or reassignment the calling script made to its
-  own args isn't lost. Then pushes `args` as the new top and calls
-  `addVariable(SCRIPT_ARGS_VAR_NAME, args)` to make it visible as `#_`.
+  the args variable (read back via `getVariable(scriptArgsVarName)`) into the entry
+  that's currently on top, so that any mutation or reassignment the calling script made
+  to its own args isn't lost. Then pushes `args` as the new top and calls
+  `addVariable(scriptArgsVarName, args)` to make it visible under that name.
 - **`popArgs()`** — pops the top entry (the just-finished script's args, discarded) and
-  calls `addVariable(SCRIPT_ARGS_VAR_NAME, stack.isEmpty() ? null : stack.peek())` to
-  restore `#_` to whatever the caller (if any) had.
+  calls `addVariable(scriptArgsVarName, stack.isEmpty() ? null : stack.peek())` to
+  restore the args variable to whatever the caller (if any) had.
 
 This is the exact push/resync/pop behavior described at the start of this exercise,
 just relocated to `SpelEvaluatorImpl` so it works uniformly whether or not a sub-shell
 is involved.
+
+`scriptArgsVarName` is read fresh on every `pushArgs`/`popArgs` call rather than fixed
+once per script run, but the stack itself holds only values, not the name each value
+was pushed under. So it's assumed to be configured once, before any scripts start
+running, rather than changed in the middle of a nested `runScript(...)` call chain — if
+it were changed mid-chain, a frame pushed under the old name and popped under the new
+one would resync against (and restore to) the wrong variable.
 
 ### Every overload manages the stack, uniformly
 
@@ -173,7 +205,7 @@ stack correct in that case: no matter how a run ends — normal completion or an
 exception propagating out — its args entry is always popped and the caller's `#_` is
 always restored before control leaves `runScript(...)`/`runRepl(...)`.
 
-### Why `#_` is a safe choice of name
+### Why `#_` is a safe choice of default name
 
 - SpEL's tokenizer accepts a lone `_` as a variable identifier (only `javac` treats a
   bare `_` as reserved; that restriction doesn't apply to a runtime SpEL parser), so
@@ -184,3 +216,10 @@ always restored before control leaves `runScript(...)`/`runRepl(...)`.
   zero-arg command invocation.
 - `_` doesn't collide with any existing built-in variable — `lastEvalResultVarName`
   defaults to `$`, and nothing else in the codebase reserves `_`.
+
+These points are specific to the default; they don't necessarily hold for every name a
+caller might configure via `setScriptArgsVarName(...)`. In particular, a name that
+happens to match an existing zero/one-arg exposed method could be shadowed by the
+shorthand-rewrite rules in `ShellUtils` when referenced *without* the `#` prefix — but
+since the args variable is always meant to be read as `#<name>`, not bare `<name>`, this
+doesn't come up in normal use.
