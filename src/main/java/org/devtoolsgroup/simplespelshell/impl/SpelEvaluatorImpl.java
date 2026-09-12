@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SpelEvaluatorImpl implements SpelEvaluator {
-    private static final String SCRIPT_ARGS_VAR_NAME = "_";
+    private String scriptArgsVarName = "_";
 
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
     // LinkedList, not ArrayDeque: no-args runScript/runRepl calls push a literal null,
@@ -105,15 +105,25 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     public void pushArgs(Object args) {
         if (!argsStack.isEmpty()) {
             argsStack.pop();
-            argsStack.push(getVariable(SCRIPT_ARGS_VAR_NAME));
+            argsStack.push(getVariable(scriptArgsVarName));
         }
         argsStack.push(args);
-        addVariable(SCRIPT_ARGS_VAR_NAME, args);
+        addVariable(scriptArgsVarName, args);
     }
 
     @Override
     public void popArgs() {
         argsStack.pop();
-        addVariable(SCRIPT_ARGS_VAR_NAME, argsStack.isEmpty() ? null : argsStack.peek());
+        addVariable(scriptArgsVarName, argsStack.isEmpty() ? null : argsStack.peek());
+    }
+
+    @Override
+    public String getScriptArgsVarName() {
+        return scriptArgsVarName;
+    }
+
+    @Override
+    public void setScriptArgsVarName(String varName) {
+        this.scriptArgsVarName = varName;
     }
 }

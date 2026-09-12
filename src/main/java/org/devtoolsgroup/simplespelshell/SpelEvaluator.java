@@ -49,4 +49,8 @@ public interface SpelEvaluator {
     void pushArgs(Object args);
 
     void popArgs();
+
+    String getScriptArgsVarName();
+
+    void setScriptArgsVarName(String varName);
 }
