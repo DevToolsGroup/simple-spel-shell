@@ -96,12 +96,12 @@ class ScriptArgsTest {
     @Test
     void scriptArgsVarNameIsConfigurable() {
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
-        shell.getSpelEvaluator().setScriptArgsVarName("sargs");
+        shell.getSpelEvaluator().setScriptArgsVarName("args");
 
-        Object result = shell.runScript("#sargs", "hello");
+        Object result = shell.runScript("#args", "hello");
 
         Assertions.assertEquals("hello", result);
-        Assertions.assertEquals("sargs", shell.getSpelEvaluator().getScriptArgsVarName());
+        Assertions.assertEquals("args", shell.getSpelEvaluator().getScriptArgsVarName());
     }
 
     @Test
