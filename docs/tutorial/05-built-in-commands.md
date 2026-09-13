@@ -1,6 +1,8 @@
 # 5. Built-in Commands: help, print, prompt, exit
 
-`BaseSpelShellImpl` — the class `TaskShell` extends — comes with a set of commands beyond `var`, which we already used on the last page. This page covers the rest: `help`, the `print` family, `prompt`, and `exit`.
+`BaseSpelShellImpl` — the class `TaskShell` extends —
+comes with a set of commands beyond `var`, which we already used on the last page.
+This page covers the rest: `help`, the `print` family, `prompt`, and `exit`.
 
 ## `help`
 
@@ -38,9 +40,14 @@ completeTask(title: String): void
 listTasks(): void
 ```
 
-That's every built-in framework command, followed by a `---` divider, followed by our own three commands. The divider marks the transition from negative-`@Order` framework commands to your own (order `0` by default) — page 6 explains exactly why, and how to hide the built-ins from this list entirely.
+That's every built-in framework command, followed by a `---` divider, followed by our own three commands.
+The divider marks the transition from negative-`@Order` framework commands to your own (order `0` by default)
+— page 6 explains exactly why,
+and how to hide the built-ins from this list entirely.
 
-`help` also takes a filter: `help(String)` and `help(NamePattern)` restrict the listing to commands whose name fuzzy-matches. Using the backtick syntax from page 4:
+`help` also takes a filter:
+`help(String)` and `help(NamePattern)` restrict the listing to commands whose name fuzzy-matches.
+Using the backtick syntax from page 4:
 
 ```
 SpEL> he `task`
@@ -49,7 +56,8 @@ completeTask(title: String): void
 listTasks(): void
 ```
 
-(`he` is a fuzzy match for `help` itself — the framework's shorthand and fuzzy-matching apply to its own commands too, not just yours.)
+(`he` is a fuzzy match for `help` itself
+— the framework's shorthand and fuzzy-matching apply to its own commands too, not just yours.)
 
 ## print, println, printf, format
 
@@ -58,11 +66,14 @@ listTasks(): void
 - `print(Object)` — writes without a trailing newline.
 - `println(Object)` — writes with one.
 - `printf(String format, Object... args)` — `String.format`-style, written straight to the console.
-- `format(String format, Object... args)` — same formatting, but *returns* the string instead of printing it (useful when you want to build a string for `println` or `var`).
+- `format(String format, Object... args)` — same formatting,
+  but *returns* the string instead of printing it
+  (useful when you want to build a string for `println` or `var`).
 
 ## `prompt` — asking the user for input
 
-`prompt(String)` prints a message and blocks for one line of input, returning it as a `String`. Let's add an interactive way to create a task:
+`prompt(String)` prints a message and blocks for one line of input, returning it as a `String`.
+Let's add an interactive way to create a task:
 
 ```java
 public void addTaskInteractive() {
@@ -79,7 +90,12 @@ Added: Buy milk
 
 ## `exit`
 
-`exit()` (or `exit(result)` to carry a value out) ends the current `runRepl()` loop. Under the hood it doesn't just `return` — it calls a configurable `Consumer<Object>` (`getOnExit()`/`setOnExit(...)`) whose default implementation is `System.exit(0)`. We'll override that default in [page 8](08-submenus.md), where a nested shell's `exit()` needs to mean "go back one level," not "kill the process."
+`exit()` (or `exit(result)` to carry a value out) ends the current `runRepl()` loop.
+Under the hood it doesn't just `return`
+— it calls a configurable `Consumer<Object>` (`getOnExit()`/`setOnExit(...)`)
+whose default implementation is `System.exit(0)`.
+We'll override that default in [page 8](08-submenus.md),
+where a nested shell's `exit()` needs to mean "go back one level," not "kill the process."
 
 ---
 Previous: [4. Name Patterns and Variables](04-name-patterns-and-variables.md) · Next: [6. Controlling Help and Shorthand Visibility with @Order](06-order-and-help-visibility.md)

@@ -1,6 +1,8 @@
 # Reference: Built-in Commands
 
-Every command available without writing a line of code, grouped by the class that introduces it. `@Order` values are shown since they determine both `help` sort position and shorthand eligibility — see [tutorial page 6](../tutorial/06-order-and-help-visibility.md).
+Every command available without writing a line of code, grouped by the class that introduces it.
+`@Order` values are shown since they determine both `help` sort position and shorthand eligibility
+— see [tutorial page 6](../tutorial/06-order-and-help-visibility.md).
 
 ## From `BaseSpelShellImpl` — introduced on [page 5](../tutorial/05-built-in-commands.md)
 
@@ -45,7 +47,9 @@ All at order −100 unless noted.
 | `runScript(Path)` | Run a script file, resolved within the sandbox. |
 | `getWorkingDirectory()` *(order −1000)* | The underlying `WorkingDirectory`. |
 
-All filesystem paths are resolved against, and constrained to stay within, the root directory the shell was constructed with — any attempt to escape it throws `ShellException`.
+All filesystem paths are resolved against,
+and constrained to stay within, the root directory the shell was constructed with
+— any attempt to escape it throws `ShellException`.
 
 ---
 Back to [reference index](index.md) · [documentation index](../index.md)

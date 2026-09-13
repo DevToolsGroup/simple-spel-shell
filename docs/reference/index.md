@@ -1,6 +1,7 @@
 # Reference Index
 
-A flat lookup across everything in the reference section. See [documentation index](../index.md) for the tutorial this all comes from.
+A flat lookup across everything in the reference section.
+See [documentation index](../index.md) for the tutorial this all comes from.
 
 | Name | What it is | Details | Tutorial |
 |---|---|---|---|

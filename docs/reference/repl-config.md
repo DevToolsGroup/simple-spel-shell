@@ -1,6 +1,9 @@
 # Reference: ReplConfig
 
-`org.devtoolsgroup.simplespelshell.ReplConfig` — every shell has two instances: `getReplConfig()` (used by `runRepl()`) and `getReplConfigForScript()` (used by `runScript(...)`), independently configurable. Full walkthrough: [tutorial page 12](../tutorial/12-repl-hooks.md).
+`org.devtoolsgroup.simplespelshell.ReplConfig` — every shell has two instances:
+`getReplConfig()` (used by `runRepl()`)
+and `getReplConfigForScript()` (used by `runScript(...)`), independently configurable.
+Full walkthrough: [tutorial page 12](../tutorial/12-repl-hooks.md).
 
 | Field | Type | Default | Fires |
 |---|---|---|---|
@@ -18,11 +21,17 @@ Accessors follow the standard `getX()`/`setX(...)` pattern for every field above
 
 1. `prompt.apply(root)` is printed (if non-`null`).
 2. A line (or, with trailing `\` continuation, several) is read.
-3. `expressionInterceptor.apply(root, expr)` runs; its return value is what gets evaluated. A `null` return ends the loop (EOF); a blank one is skipped.
+3. `expressionInterceptor.apply(root, expr)` runs; its return value is what gets evaluated.
+A `null` return ends the loop (EOF); a blank one is skipped.
 4. `exprBeforeEvalInterceptor.accept(root, expr)` runs, if non-`null`.
-5. `SpelEvaluator.evaluate(root, expr)` runs; the result is stored under the `$` SpEL variable (configurable, [page 14](../tutorial/14-other-extension-points.md)).
+5. `SpelEvaluator.evaluate(root, expr)` runs;
+the result is stored under the `$` SpEL variable (configurable, [page 14](../tutorial/14-other-extension-points.md)).
 6. `evalResultInterceptor.accept(root, result)` runs, if non-`null`.
-7. Any exception thrown during 3–6 is caught: if its class matches `stopOnException`, it's rethrown (ending the loop); otherwise its message (and, for non-`ShellException`s or `ShellException`s with `printStackTrace = true`, its stack trace) is printed, and the loop continues.
+7. Any exception thrown during 3–6 is caught:
+if its class matches `stopOnException`, it's rethrown (ending the loop);
+otherwise its message (and, for non-`ShellException`s or `ShellException`s with `printStackTrace = true`,
+its stack trace) is printed,
+and the loop continues.
 
 ---
 Back to [reference index](index.md) · [documentation index](../index.md)
