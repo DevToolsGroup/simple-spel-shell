@@ -44,6 +44,7 @@ import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.devtoolsgroup.simplespelshell.ShellUtils.getSortOrder;
@@ -124,31 +125,49 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     @Order(-1000)
     @Override
     public Object runRepl() {
+        return runRepl(null);
+    }
+
+    @Order(-1000)
+    @Override
+    public Object runRepl(Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             console::read,
             line -> replConfig.getIsCommentLine().apply(getRootObject(), line)
         );
-        return runRepl(replConfig, expressionReader);
+        return runWithArgs(args, () -> runRepl(replConfig, expressionReader));
     }
 
     @Order(-100)
     @Override
     public Object runScript(String script) {
+        return runScript(script, null);
+    }
+
+    @Order(-100)
+    @Override
+    public Object runScript(String script, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             ShellUtils.lineReader(script),
             line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
         );
-        return runRepl(replConfigForScript, expressionReader);
+        return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
     }
 
     @Order(-100)
     @Override
     public Object runScript(LineReader scriptLineReader) {
+        return runScript(scriptLineReader, null);
+    }
+
+    @Order(-100)
+    @Override
+    public Object runScript(LineReader scriptLineReader, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             scriptLineReader,
             line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
         );
-        return runRepl(replConfigForScript, expressionReader);
+        return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
     }
 
     @Order(-100)
@@ -224,6 +243,15 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             .filter(method -> !Modifier.isStatic(method.getModifiers()) && predicate.test(method));
     }
 
+    protected Object runWithArgs(Object args, Supplier<Object> action) {
+        getSpelEvaluator().pushArgs(args);
+        try {
+            return action.get();
+        } finally {
+            getSpelEvaluator().popArgs();
+        }
+    }
+
     protected Object runRepl(ReplConfig config, ExpressionReader expressionReader) {
         while (true) {
             Function<Object, String> prompt = config.getPrompt();
@@ -274,10 +302,11 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             String rewrittenExpr = ShellUtils.rewriteExpr(expr, shell.zeroArgMethodsForRewrite, shell.oneArgMethodsForRewrite);
             ReplConfig config = forScript ? shell.getReplConfigForScript() : shell.getReplConfig();
             if (
-                config.getExprHistoryFile() != null
+                config.getExprHistoryFile() != null && rewrittenExpr != null
                     && !rewrittenExpr.startsWith("hist(")
                     && !rewrittenExpr.startsWith("help(")
                     && !rewrittenExpr.startsWith("exit(")
+                    && !rewrittenExpr.isBlank()
             ) {
                 ShellUtils.saveExprToHistFile(expr, config.getExprHistoryFile());
             }

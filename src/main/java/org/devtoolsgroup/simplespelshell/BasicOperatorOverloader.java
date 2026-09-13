@@ -51,6 +51,12 @@ public class BasicOperatorOverloader implements OperatorOverloader {
         Operation operation, @Nullable Object leftOperand, @Nullable Object rightOperand
     ) throws EvaluationException {
         if (operation == Operation.DIVIDE) {
+            if ((leftOperand == null || leftOperand instanceof String str && str.isBlank()) && rightOperand != null) {
+                return Path.of(String.valueOf(rightOperand)).normalize();
+            }
+            if ((rightOperand == null || rightOperand instanceof String str && str.isBlank()) && leftOperand != null) {
+                return Path.of(String.valueOf(leftOperand)).normalize();
+            }
             if (leftOperand != null && rightOperand != null) {
                 return Path.of(leftOperand + "/" + rightOperand).normalize();
             }
