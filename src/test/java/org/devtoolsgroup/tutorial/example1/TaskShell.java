@@ -1,4 +1,4 @@
-package org.devtoolsgroup.tutorial.gettingstarted;
+package org.devtoolsgroup.tutorial.example1;
 
 import org.devtoolsgroup.simplespelshell.impl.BaseSpelShellImpl;
 

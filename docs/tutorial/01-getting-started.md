@@ -43,7 +43,7 @@ public class TaskShell extends BaseSpelShellImpl {
 ## Running it
 
 ```
-$ mvn compile exec:java -Dexec.mainClass=com.example.taskshell.TaskShell
+$ mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example1.TaskShell
 SpEL> addTask('Buy milk')
 Added: Buy milk
 SpEL> addTask('Walk the dog')
