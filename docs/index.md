@@ -1,4 +1,4 @@
-# simple-spel-shell documentation
+# Simple SpEL Shell Documentation
 
 simple-spel-shell turns a plain Java class into an interactive CLI shell: every public method you add becomes a command, and everything you type at the prompt is evaluated as a [Spring Expression Language (SpEL)](https://docs.spring.io/spring-framework/reference/core/expressions.html) expression against your shell object. This documentation set has two parts:
 

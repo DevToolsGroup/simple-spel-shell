@@ -1,4 +1,4 @@
-# simple-spel-shell
+# Simple SpEL Shell
 
 A small Java library for building interactive CLI dev tools, where every command you type is evaluated as a [Spring Expression Language (SpEL)](https://docs.spring.io/spring-framework/reference/core/expressions.html) expression.
 
