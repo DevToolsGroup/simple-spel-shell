@@ -47,9 +47,5 @@ All at order −100 unless noted.
 | `runScript(Path)` | Run a script file, resolved within the sandbox. |
 | `getWorkingDirectory()` *(order −1000)* | The underlying `WorkingDirectory`. |
 
-All filesystem paths are resolved against,
-and constrained to stay within, the root directory the shell was constructed with
-— any attempt to escape it throws `ShellException`.
-
 ---
 Back to [reference index](index.md) · [documentation index](../index.md)
