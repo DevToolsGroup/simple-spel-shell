@@ -14,21 +14,20 @@ Introduced: [page 1](../tutorial/01-getting-started.md).
 |---|---|
 | `CoreSpelShellImpl(CoreSpelShell parentShell, Console console)` | `parentShell == null` creates a root shell (own `SpelEvaluator`, own default `ReplConfig`s); non-`null` creates a sub-shell sharing the parent's `SpelEvaluator` and copying its `ReplConfig`s. |
 
-| Method | Order | Notes |
-|---|---|---|
-| `runRepl()` | −1000 | Starts the interactive loop. Overridable — see [page 8](../tutorial/08-submenus.md). |
-| `runScript(String script)` | −100 | Runs the given text as a batch of expressions. |
-| `runScript(LineReader reader)` | −100 | Same, from an arbitrary line source. |
-| `eval(Object rootObject, String expression)` | −100 | Evaluates one expression directly against a given root object. |
-| `getSpelEvaluator()` | −1000 | The underlying `SpelEvaluator` — see [tutorial page 11](../tutorial/11-custom-type-converters.md)/[13](../tutorial/13-operator-overloading.md). |
-| `getConsole()` / `setConsole(Console)` | −1000 | The I/O abstraction (`read`/`print`/`println`/`printf`). |
-| `getReplConfig()` / `setReplConfig(ReplConfig)` | −1000 | Interactive-loop configuration — see [ReplConfig reference](repl-config.md). |
-| `getReplConfigForScript()` / `setReplConfigForScript(ReplConfig)` | −1000 | Separate configuration used by `runScript(...)`. |
-| `setLastEvalResultVarName(String)` | −1000 | Default `"$"` — see [page 14](../tutorial/14-other-extension-points.md). |
-| `setLastEvalResultMaxPrintLength(int)` | −100 | Default `100` — see [page 14](../tutorial/14-other-extension-points.md). |
+| Method                                                            | Notes                                                                                                                                           |
+|-------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `runRepl()`                                                       | Starts the interactive loop. Overridable — see [page 8](../tutorial/08-submenus.md).                                                            |
+| `runScript(String script)`                                        | Runs the given text as a batch of expressions.                                                                                                  |
+| `runScript(LineReader reader)`                                    | Same, from an arbitrary line source.                                                                                                            |
+| `eval(Object rootObject, String expression)`                      | Evaluates one expression directly against a given root object.                                                                                  |
+| `getSpelEvaluator()`                                              | The underlying `SpelEvaluator` — see [tutorial page 11](../tutorial/11-custom-type-converters.md)/[13](../tutorial/13-operator-overloading.md). |
+| `getConsole()` / `setConsole(Console)`                            | The I/O abstraction (`read`/`print`/`println`/`printf`).                                                                                        |
+| `getReplConfig()` / `setReplConfig(ReplConfig)`                   | Interactive-loop configuration — see [ReplConfig reference](repl-config.md).                                                                    |
+| `getReplConfigForScript()` / `setReplConfigForScript(ReplConfig)` | Separate configuration used by `runScript(...)`.                                                                                                |
+| `setLastEvalResultVarName(String)`                                | Default `"$"` — see [page 14](../tutorial/14-other-extension-points.md).                                                                        |
+| `setLastEvalResultMaxPrintLength(int)`                            | Default `100` — see [page 14](../tutorial/14-other-extension-points.md).                                                                        |
 
-Protected, overridable: `getRootObject()` (default `this`),
-`isMethodToHideInRewrite(Method)` ([page 14](../tutorial/14-other-extension-points.md)).
+Protected, overridable: `isMethodToHideInRewrite(Method)` ([page 14](../tutorial/14-other-extension-points.md)).
 
 ## `BaseSpelShellImpl`
 
@@ -62,9 +61,9 @@ and `String → NamePattern` converters automatically (see [page 11](../tutorial
 | `FileSystemAwareSpelShellImpl(Path initDir)` | Root shell; `initDir` **must already exist**. |
 | `FileSystemAwareSpelShellImpl(Console console, Path initDir)` | Root shell, custom console. |
 | `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell)` | Sub-shell sharing the parent's working directory. |
-| `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Console console, Path initDir)` | Full control. |
+| `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Console console, Path initDir)` |  |
 
-`getWorkingDirectory()` (order −1000) exposes the underlying `WorkingDirectory`,
+`getWorkingDirectory()` exposes the underlying `WorkingDirectory`,
 which enforces the sandbox and throws `ShellException` on any attempt to `cd` or write outside the root directory.
 
 ---
