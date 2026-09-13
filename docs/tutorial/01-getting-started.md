@@ -16,7 +16,7 @@ There's a third class, `FileSystemAwareSpelShellImpl`, which adds a sandboxed wo
 A shell is just a class with public methods. Each public method becomes a command automatically — there's no registration step, no annotation required to opt in.
 
 ```java
-package com.example.taskshell;
+package org.devtoolsgroup.tutorial.example1;
 
 import org.devtoolsgroup.simplespelshell.impl.BaseSpelShellImpl;
 
@@ -41,6 +41,14 @@ public class TaskShell extends BaseSpelShellImpl {
 `runRepl()` starts the interactive loop: it prints a prompt, reads a line, evaluates it, prints the result if there is one, and repeats until you call `exit()`. `println` is one of the built-in commands from `BaseSpelShellImpl` — since your shell class extends it, you can call it directly from your own methods just like any other inherited method.
 
 ## Running it
+
+Every example in this tutorial is saved as its own class under `src/test/java/org/devtoolsgroup/tutorial/`. Use the command below to run any of them:
+
+```
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=<example-class>
+```
+
+Replace `<example-class>` with the fully-qualified name of the example you want to run. For the `TaskShell` example above, that's `org.devtoolsgroup.tutorial.example1.TaskShell`:
 
 ```
 $ mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example1.TaskShell
