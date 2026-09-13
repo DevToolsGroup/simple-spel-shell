@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static org.devtoolsgroup.simplespelshell.ShellUtils.matches;
@@ -162,6 +163,7 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     @Override
     public void mkdir(boolean autoCd, Path path) {
         Path curDir = getWorkingDirectory().getCurDirAbsolutePath();
+        path = getFile(path).toPath();
         if (!ShellUtils.isParentChild(curDir, path)) {
             throw new ShellException(false, "Cannot write outside of %s".formatted(curDir));
         }
@@ -190,10 +192,12 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
             for (Path entry : entries) {
                 children.add(entry);
             }
-            children.sort(Comparator.comparing(
+            Function<Path, Boolean> fileTypeComparator = (Path p) -> p.toFile().isFile();
+            Comparator<Path> nameComparator = Comparator.comparing(
                 p -> p.getFileName().toString(),
                 String.CASE_INSENSITIVE_ORDER
-            ));
+            );
+            children.sort(Comparator.comparing(fileTypeComparator).thenComparing(nameComparator));
 
             printPaths(children);
         } catch (IOException e) {

@@ -4,50 +4,34 @@ Up to now, tasks have lived only in memory — they disappear when the shell exi
 This page switches `TaskShell` to extend `FileSystemAwareSpelShellImpl` instead of `BaseSpelShellImpl`,
 so each task becomes a file on disk.
 We're trading the `Task` object and the `viewTask` sub-shell from [page 8](08-submenus.md) for plain files;
-the submenu technique from that page still applies to whatever storage model you choose,
-it's just not needed for what follows here.
+the submenu technique from that page is not needed for what follows here.
 
 ## Switching base classes
 
-`FileSystemAwareSpelShellImpl extends BaseSpelShellImpl`,
+`FileSystemAwareSpelShellImpl` extends `BaseSpelShellImpl`,
 so every command from the earlier pages (`help`, `var`, `exit`, and so on) is still there
 — this class adds a *sandboxed working directory* and the commands that go with it:
 `cd`, `pwd`, `ll`, `mkdir`, `read`, `write`, `findFilesByName`, `listFiles`, `listDirs`.
 
 ```java
+package org.devtoolsgroup.tutorial.example8;
+
 public class TaskShell extends FileSystemAwareSpelShellImpl {
 
     public static void main(String[] args) throws IOException {
-        Path tasksDir = Path.of("tasks");
+        Path tasksDir = Path.of("target/tasks");
         Files.createDirectories(tasksDir);
         new TaskShell(tasksDir).runRepl();
     }
 
     public TaskShell(Path tasksDir) {
         super(tasksDir);
-        setMinOrderForHelp(0);
-        setOnExit(ShellUtils.exnExit(true));
     }
 
-    @Order(-1000)
-    @Override
-    public Object runRepl() {
-        while (true) {
-            try {
-                super.runRepl();
-            } catch (ShellExitException ex) {
-                if ((boolean) ex.getResult()) {
-                    return null;
-                }
-            }
-        }
-    }
     // addTask / listTasks / completeTask below
 }
 ```
 
-The `runRepl()` override and `setOnExit` carry over unchanged from page 8
-— sub-shells aren't in play here, but nothing about that pattern was specific to the previous storage model.
 One important detail: the constructor of `FileSystemAwareSpelShellImpl`
 requires the directory you pass it to **already exist**
 — it fails fast with a `ShellException` otherwise —
@@ -58,33 +42,40 @@ so `main` creates it first.
 Each task becomes one file, named after its title, holding a single word (`pending` or `done`) as its content:
 
 ```java
-public void addTask(String title) {
-    write(Path.of(title + ".task"), "pending");
-    println("Added: " + title);
-}
+package org.devtoolsgroup.tutorial.example8;
 
-public void listTasks() {
-    List<File> files = findFilesByName(new NamePattern("")).stream()
-        .filter(File::isFile)
-        .toList();
-    if (files.isEmpty()) {
-        println("No tasks yet.");
-        return;
-    }
-    for (File file : files) {
-        String title = file.getName().replace(".task", "");
-        String status = read(file.toPath());
-        println((status.equals("done") ? "[x] " : "[ ] ") + title);
-    }
-}
+public class TaskShell extends FileSystemAwareSpelShellImpl {
 
-public void completeTask(String title) {
-    Path taskFile = Path.of(title + ".task");
-    if (!getFile(taskFile).exists()) {
-        println("No such task: " + title);
-        return;
+    ...
+
+    public void addTask(String title) {
+        write(Path.of(title + ".task"), "pending");
+        println("Added: " + title);
     }
-    write(taskFile, "done");
+
+    public void listTasks() {
+        List<File> files = findFilesByName(new NamePattern("")).stream()
+                .filter(File::isFile)
+                .toList();
+        if (files.isEmpty()) {
+            println("No tasks yet.");
+            return;
+        }
+        for (File file : files) {
+            String title = file.getName().replace(".task", "");
+            String status = read(file.toPath());
+            println((status.equals("done") ? "[x] " : "[ ] ") + title);
+        }
+    }
+
+    public void completeTask(String title) {
+        Path taskFile = Path.of(title + ".task");
+        if (!getFile(taskFile).exists()) {
+            println("No such task: " + title);
+            return;
+        }
+        write(taskFile, "done");
+    }
 }
 ```
 
@@ -100,6 +91,10 @@ which is how `listTasks` finds every task file regardless of what it's named.
 Because tasks are just files now, the built-in directory commands work on them directly
 — including organizing tasks into subfolders:
 
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example8.TaskShell
+```
+
 ```
 SpEL> at 'Buy milk'
 Added: Buy milk
@@ -110,26 +105,26 @@ SpEL> ll
 7 Buy milk.task
 4 Walk the dog.task
 SpEL> mkdir 'urgent'
-/home/dev/taskshell/tasks/urgent
+/home/dev/Projects/simple-spel-shell/target/tasks/urgent
 SpEL> at 'Call dentist'
 Added: Call dentist
 SpEL> lt
 [ ] Call dentist
 SpEL> cd
-/home/dev/taskshell/tasks
+/home/dev/Projects/simple-spel-shell/target/tasks
 SpEL> lt
+[ ] Call dentist
 [ ] Buy milk
 [x] Walk the dog
-[ ] Call dentist
 SpEL> ll
-7 Buy milk.task
   urgent/
+7 Buy milk.task
 4 Walk the dog.task
 ```
 
 A couple of things worth noticing:
 
-- `mkdir 'urgent'` both creates the directory and `cd`s into it (`mkdir(Path)` defaults `autoCd` to `true`);
+- `mkdir 'urgent'` both creates the directory and `cd`s into it;
 its output is the new directory's absolute path.
 - Once inside `urgent/`, `lt` only shows `Call dentist` — `findFilesByName` walks from the *current* directory,
 so `cd` changes what `listTasks` can see.
