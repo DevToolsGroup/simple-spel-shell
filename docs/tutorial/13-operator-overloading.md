@@ -2,8 +2,8 @@
 
 SpEL lets you give existing operators new meaning for your own types.
 This page uses it for something genuinely useful in a task tracker:
-`` `release3` - 3 `` fuzzy-finds a task named something like "Release 3.0"
-and pushes its due date back three days.
+`` `rel3` - 3 `` fuzzy-finds a task named something like "Release 3.0"
+and computes what its due date would be three days earlier.
 
 ## The `OperatorOverloader` SPI
 
@@ -21,105 +21,127 @@ It overloads `/` between two `String`/`Path` operands to join paths
 `setOperatorOverloader` takes one implementation at a time
 — it replaces whatever was configured before,
 the same way `setTypeConverters` replaces the whole converter list (page 11).
-If you needed both `BasicOperatorOverloader`'s path-joining *and* the overloader below at once,
-you'd write one class that delegates to both rather than call `setOperatorOverloader` twice.
+`TaskShell` extends `FileSystemAwareSpelShellImpl`,
+which already installs `BasicOperatorOverloader` as its default, giving `/` its path-joining behavior.
+Calling `setOperatorOverloader` with a class that only knows about due-date shifting would silently turn that off.
+The overloader below avoids that by extending `BasicOperatorOverloader` itself
+and delegating to `super` for anything it doesn't recognize,
+so path-joining and date-shifting both stay available at once.
 
 ## Shifting a due date by name
 
+Implement a custom operator overloader.
+
 ```java
-public class TaskDueDateOperatorOverloader implements OperatorOverloader {
+package org.devtoolsgroup.tutorial.example12;
+
+import org.devtoolsgroup.simplespelshell.BasicOperatorOverloader;
+import org.devtoolsgroup.simplespelshell.NamePattern;
+import org.springframework.expression.Operation;
+
+public class TaskDueDateOperatorOverloader extends BasicOperatorOverloader {
     private final TaskShell shell;
 
     public TaskDueDateOperatorOverloader(TaskShell shell) {
         this.shell = shell;
     }
 
-    @Override
-    public boolean overridesOperation(Operation operation, Object left, Object right) {
+    private boolean isDueDateShift(Operation operation, Object left, Object right) {
         return (operation == Operation.SUBTRACT || operation == Operation.ADD)
             && left instanceof NamePattern && right instanceof Number;
     }
 
     @Override
+    public boolean overridesOperation(Operation operation, Object left, Object right) {
+        return isDueDateShift(operation, left, right) || super.overridesOperation(operation, left, right);
+    }
+
+    @Override
     public Object operate(Operation operation, Object left, Object right) {
-        String title = shell.findTaskTitle(((NamePattern) left).pattern());
-        long days = ((Number) right).longValue();
-        LocalDate shifted = shell.getDueDate(title)
-            .plusDays(operation == Operation.SUBTRACT ? -days : days);
-        shell.setDueDate(title, shifted);
-        return "%s due %s".formatted(title, shifted);
+        if (isDueDateShift(operation, left, right)) {
+            long days = ((Number) right).longValue();
+            return shell.getDueDate((NamePattern) left).plusDays(operation == Operation.SUBTRACT ? -days : days);
+        }
+        return super.operate(operation, left, right);
     }
 }
 ```
 
-`overridesOperation` only claims `SUBTRACT`/`ADD` when the left operand is a `NamePattern`
-and the right is a `Number`
-— everything else (`1+2`, string concatenation, and so on) falls through to SpEL's own built-in behavior untouched.
-`operate` does the real work:
-find the one task whose title fuzzy-matches the pattern, shift its due date, save it,
-and return a short confirmation string.
+`overridesOperation` claims `SUBTRACT`/`ADD` between a `NamePattern` and a `Number` itself,
+and defers to `super.overridesOperation` for everything else
+— which is how `/` between two `String`/`Path` operands keeps working unchanged.
 
-`TaskShell` needs two small helpers alongside `getDueDate`/`setDueDate` from page 11
-— `findTaskTitle` reuses the exact same fuzzy `ShellUtils.matches` matcher
-that powers shorthand command names (page 3)
-and backtick patterns (page 4), applied here to task titles instead of method names,
-with the same "zero or multiple matches is an error"
-behavior as `ShellUtils`'s own internal method resolution:
+`TaskShell` registers the new operator overloader using
+`getSpelEvaluator().setOperatorOverloader(new TaskDueDateOperatorOverloader(this))`:
 
 ```java
-List<String> taskTitles() {
-    return findFilesByName(new NamePattern("")).stream()
-        .filter(File::isFile)
-        .map(f -> f.getName().replace(".task", ""))
-        .toList();
-}
+package org.devtoolsgroup.tutorial.example12;
 
-String findTaskTitle(String pattern) {
-    List<String> found = taskTitles().stream()
-        .filter(title -> ShellUtils.matches(title, pattern))
-        .toList();
-    if (found.isEmpty()) {
-        throw new ShellException(false, "No task matches '" + pattern + "'");
+public class TaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+    
+    public TaskShell(Path tasksDir) {
+        super(tasksDir);
+        // Add a converter to seamlessly go from String to LocalDate
+        List<Converter<?, ?>> converters = new ArrayList<>(getSpelEvaluator().getTypeConverters());
+        converters.add(new Converter<String, LocalDate>() {
+            @Override
+            public LocalDate convert(String source) {
+                return LocalDate.parse(source);
+            }
+        });
+        getSpelEvaluator().setTypeConverters(converters);
+        // Wire the overloader
+        getSpelEvaluator().setOperatorOverloader(new TaskDueDateOperatorOverloader(this));
     }
-    if (found.size() > 1) {
-        throw new ShellException(false, "Multiple tasks match '" + pattern + "': " + found);
+
+    public void setDueDate(NamePattern pattern, LocalDate date) {
+        Path taskFile = findTaskByPattern(pattern).toPath();
+        String status = read(taskFile).lines().findFirst().orElse("pending");
+        write(taskFile, status + "\n" + date);
     }
-    return found.getFirst();
+
+    public LocalDate getDueDate(NamePattern pattern) {
+        Path taskFile = findTaskByPattern(pattern).toPath();
+        List<String> lines = read(taskFile).lines().toList();
+        return lines.size() > 1 && !lines.get(1).isBlank() ? LocalDate.parse(lines.get(1)) : LocalDate.now();
+    }
+    
+    ...
+
+    private File findTaskByPattern(NamePattern pattern) {
+        List<File> found = findFilesByName(pattern).stream()
+            .filter(File::isFile)
+            .filter(file -> file.getName().endsWith(".task"))
+            .toList();
+        if (found.isEmpty()) {
+            throw new ShellException(false, "Could not find a task by pattern '" + pattern.pattern() + "'.");
+        }
+        if (found.size() > 1) {
+            throw new ShellException(false, "More than one task were found by pattern '" + pattern.pattern() + "'.");
+        }
+        return found.getFirst();
+    }
 }
-
-LocalDate getDueDate(String title) {
-    List<String> lines = read(Path.of(title + ".task")).lines().toList();
-    return lines.size() > 1 && !lines.get(1).isBlank() ? LocalDate.parse(lines.get(1)) : LocalDate.now();
-}
-```
-
-Wire the overloader in during construction:
-
-```java
-getSpelEvaluator().setOperatorOverloader(new TaskDueDateOperatorOverloader(this));
 ```
 
 ## Trying it out
 
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example12.TaskShell
+```
+
 ```
 SpEL> addTask 'Release 3.0'
 Added: Release 3.0
-SpEL> setDueDate('Release 3.0', '2026-09-20')
-SpEL> `release3` - 3
-Release 3.0 due 2026-09-17
-SpEL> `release3` + 7
-Release 3.0 due 2026-09-24
+SpEL> addTask 'Release 4.0'
+Added: Release 4.0
+SpEL> setDueDate(`rel3`, '2026-09-20')
+SpEL> setDueDate(`rel4`, `rel3` + 10)
+SpEL> getDueDate `rel4
+2026-09-30
 ```
-
-Walking through what actually happens on the `` `release3` - 3 `` line:
-the backtick syntax rewrites it to `npat('release3') - 3` before shorthand rewriting even runs (page 4);
-that string doesn't match any of the shorthand rules from page 3,
-so it's evaluated as-is — a plain SpEL subtraction between the result of calling `npat('release3')` (a `NamePattern`)
-and the integer `3`.
-Since neither operand is a type SpEL subtracts natively,
-it asks the configured `OperatorOverloader`, which says yes and does the real work.
-Nothing about the shell's command-dispatch machinery is involved at all past the `npat(...)` call
-— it's ordinary SpEL operator resolution, pointed at code you wrote.
 
 ---
 Previous: [12. REPL Hooks: Prompts, Comments, and Interceptors](12-repl-hooks.md) · Next: [14. Other Extension Points and Current Limits](14-other-extension-points.md)
