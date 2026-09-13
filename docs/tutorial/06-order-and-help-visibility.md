@@ -42,6 +42,10 @@ public TaskShell() {
 }
 ```
 
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example4.TaskShell
+```
+
 ```
 SpEL> help
 addTask(title: String): void
@@ -50,8 +54,6 @@ completeTask(title: String): void
 listTasks(): void
 ```
 
-This is the same technique used by the framework's own `Example2` test fixture,
-with the same comment: *"show custom methods only in help."*
 The built-ins are all still fully callable (`hi` still resolves to `hist`, `he` still resolves to `help`)
 — they've just been curated out of the listing.
 
@@ -61,6 +63,8 @@ The built-ins are all still fully callable (`hi` still resolves to `hist`, `he` 
 Put it on your own methods to change where they sort relative to each other — lower values sort first:
 
 ```java
+import org.springframework.core.annotation.Order;
+...
 @Order(-10)
 @Override
 public void listTasks() {
