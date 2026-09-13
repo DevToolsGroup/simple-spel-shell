@@ -6,7 +6,7 @@ This page introduces the rewriting layer that lets you type `addTask 'Buy milk'`
 
 ## Two new commands
 
-First, let's give `TaskShell` a couple more methods to play with:
+First, let's give `TaskShell` a couple more methods to play with (org.devtoolsgroup.tutorial.example2.TaskShell):
 
 ```java
 public void listTasks() {
@@ -39,6 +39,10 @@ which tries a handful of patterns in order and rewrites the first one that match
 
 The `arg` part is inserted verbatim as SpEL — it isn't quoted for you.
 That means a bare word like `1` or `#someVar` works as-is, but a string needs SpEL's own quotes:
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example2.TaskShell
+```
 
 ```
 SpEL> addTask 'Buy milk'
