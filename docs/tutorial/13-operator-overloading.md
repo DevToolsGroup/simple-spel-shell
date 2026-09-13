@@ -2,8 +2,8 @@
 
 SpEL lets you give existing operators new meaning for your own types.
 This page uses it for something genuinely useful in a task tracker:
-`` `rel3` - 3 `` fuzzy-finds a task named something like "Release 3.0"
-and computes what its due date would be three days earlier.
+`` `rel3` + 10 `` fuzzy-finds a task named something like "Release 3.0"
+and computes what its due date would be ten days later.
 
 ## The `OperatorOverloader` SPI
 
@@ -30,7 +30,8 @@ so path-joining and date-shifting both stay available at once.
 
 ## Shifting a due date by name
 
-Implement a custom operator overloader.
+Here's an operator overloader that recognizes a `NamePattern` shifted by a `Number` of days,
+and falls back to `BasicOperatorOverloader` for everything else:
 
 ```java
 package org.devtoolsgroup.tutorial.example12;
@@ -119,7 +120,7 @@ public class TaskShell extends FileSystemAwareSpelShellImpl {
             throw new ShellException(false, "Could not find a task by pattern '" + pattern.pattern() + "'.");
         }
         if (found.size() > 1) {
-            throw new ShellException(false, "More than one task were found by pattern '" + pattern.pattern() + "'.");
+            throw new ShellException(false, "More than one task was found by pattern '" + pattern.pattern() + "'.");
         }
         return found.getFirst();
     }

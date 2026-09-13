@@ -80,7 +80,7 @@ public class TaskShell extends FileSystemAwareSpelShellImpl {
             throw new ShellException(false, "Could not find a task by pattern '" + pattern.pattern() + "'.");
         }
         if (found.size() > 1) {
-            throw new ShellException(false, "More than one task were found by pattern '" + pattern.pattern() + "'.");
+            throw new ShellException(false, "More than one task was found by pattern '" + pattern.pattern() + "'.");
         }
         return found.getFirst();
     }
