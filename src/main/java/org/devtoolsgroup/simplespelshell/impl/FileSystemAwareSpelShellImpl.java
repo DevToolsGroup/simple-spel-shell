@@ -104,11 +104,17 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     @Order(-100)
     @Override
     public Object runScript(Path path) {
+        return runScript(path, null);
+    }
+
+    @Order(-100)
+    @Override
+    public Object runScript(Path path, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             ShellUtils.lineReader(workingDirectory.getFile(path)),
             line -> getReplConfigForScript().getIsCommentLine().apply(getRootObject(), line)
         );
-        return runRepl(getReplConfigForScript(), expressionReader);
+        return runWithArgs(args, () -> runRepl(getReplConfigForScript(), expressionReader));
     }
 
     @Order(-100)

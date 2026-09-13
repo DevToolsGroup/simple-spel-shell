@@ -34,13 +34,20 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.expression.spel.support.StandardTypeConverter;
 
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SpelEvaluatorImpl implements SpelEvaluator {
+    private String scriptArgsVarName = "_";
+
     private final Map<String, Object> variables = new ConcurrentHashMap<>();
+    // LinkedList, not ArrayDeque: no-args runScript/runRepl calls push a literal null,
+    // and ArrayDeque rejects null elements.
+    private final Deque<Object> argsStack = new LinkedList<>();
     private List<Converter<?, ?>> typeConverters = List.of();
     private StandardEvaluationContext spelCtx = new StandardEvaluationContext();
     private final SpelExpressionParser parser = new SpelExpressionParser();
@@ -92,5 +99,31 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     @Override
     public Map<String, Object> getAllVariables() {
         return new HashMap<>(variables);
+    }
+
+    @Override
+    public void pushArgs(Object args) {
+        if (!argsStack.isEmpty()) {
+            argsStack.pop();
+            argsStack.push(getVariable(scriptArgsVarName));
+        }
+        argsStack.push(args);
+        addVariable(scriptArgsVarName, args);
+    }
+
+    @Override
+    public void popArgs() {
+        argsStack.pop();
+        addVariable(scriptArgsVarName, argsStack.isEmpty() ? null : argsStack.peek());
+    }
+
+    @Override
+    public String getScriptArgsVarName() {
+        return scriptArgsVarName;
+    }
+
+    @Override
+    public void setScriptArgsVarName(String varName) {
+        this.scriptArgsVarName = varName;
     }
 }

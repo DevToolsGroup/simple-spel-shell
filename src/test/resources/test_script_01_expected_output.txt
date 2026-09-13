@@ -25,6 +25,8 @@ println(obj: Object): void
 prompt(prompt: String): String
 runScript(script: String): Object
 runScript(scriptLineReader: LineReader): Object
+runScript(script: String, args: Object): Object
+runScript(scriptLineReader: LineReader, args: Object): Object
 setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
 var(): void
 var(name: String): Object

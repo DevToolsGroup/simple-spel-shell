@@ -28,9 +28,15 @@ public interface CoreSpelShell {
 
     Object runRepl();
 
+    Object runRepl(Object args);
+
     Object runScript(String script);
 
+    Object runScript(String script, Object args);
+
     Object runScript(LineReader scriptLineReader);
+
+    Object runScript(LineReader scriptLineReader, Object args);
 
     Object eval(Object rootObject, String expression);
 

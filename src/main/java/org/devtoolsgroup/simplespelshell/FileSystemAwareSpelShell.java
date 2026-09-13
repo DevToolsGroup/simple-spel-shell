@@ -34,6 +34,8 @@ public interface FileSystemAwareSpelShell extends BaseSpelShell {
 
     Object runScript(Path path);
 
+    Object runScript(Path path, Object args);
+
     Path cd(Path path);
 
     Path cd();
