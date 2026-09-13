@@ -35,7 +35,7 @@ Always use the `#` prefix to *read* a variable.
 A bare `due1` with nothing else on the line matches the zero-arg-method shorthand rule from page 3 instead,
 and — since no command named `due1` exists —
 fails with a `ShellException` ("Cannot find a method by pattern 'due1'").
-Bare names are for *setting* a variable (`due1 = value`, via the `x = value` rule);
+Bare names are for *setting* a variable (`due1 = value`);
 `#due1` is for reading one back inside an expression.
 
 ## Backtick name patterns
@@ -47,7 +47,7 @@ gets rewritten (before shorthand rewriting even runs) into `npat('pat')`, a `Nam
 using the same matching algorithm from page 3.
 
 ```
-SpEL> var `due`
+SpEL> var `due
 due1: java.lang.String
 due2: java.lang.String
 dueSoon: java.lang.String
