@@ -12,13 +12,11 @@ Spring's `OperatorOverloader` interface has two methods:
 and `operate(Operation, Object left, Object right)`, called if the first one said yes.
 The framework ships two implementations:
 
-- **`EmptyOperatorOverloader`** — the default.
+- **`EmptyOperatorOverloader`** — the default in BaseSpelShellImpl.
 `overridesOperation` always returns `false`, so every operator behaves exactly as plain SpEL defines it.
-- **`BasicOperatorOverloader`** — an opt-in example
-that overloads `/` between two `String`/`Path` operands to join paths
+- **`BasicOperatorOverloader`** — the default in FileSystemAwareSpelShellImpl.
+It overloads `/` between two `String`/`Path` operands to join paths
 (`"a" / "b"` → `Path` `a/b`).
-It's not active by default;
-a shell that wants it calls `getSpelEvaluator().setOperatorOverloader(new BasicOperatorOverloader())` explicitly.
 
 `setOperatorOverloader` takes one implementation at a time
 — it replaces whatever was configured before,
