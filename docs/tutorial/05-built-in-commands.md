@@ -50,7 +50,7 @@ and how to hide the built-ins from this list entirely.
 Using the backtick syntax from page 4:
 
 ```
-SpEL> he `task`
+SpEL> he `task
 addTask(title: String): void
 completeTask(title: String): void
 listTasks(): void
@@ -80,6 +80,10 @@ public void addTaskInteractive() {
     String title = prompt("Task title: ");
     addTask(title);
 }
+```
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example3.TaskShell
 ```
 
 ```
