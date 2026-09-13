@@ -83,6 +83,18 @@ class ScriptArgsTest {
 
     @Test
     void exceptionInNestedScriptStillRestoresOuterArgs() {
+        CatchingShell shell = new CatchingShell();
+
+        Object result = shell.runScript(
+            "runScriptCatchingException('1/0', 'inner-args')\n#_",
+            "outer-args"
+        );
+
+        Assertions.assertEquals("outer-args", result);
+    }
+
+    @Test
+    void exceptionPropagatingOutOfTopLevelScriptLeavesArgsUnset() {
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
         Assertions.assertThrows(
@@ -131,5 +143,15 @@ class ScriptArgsTest {
             line -> shell.getReplConfig().getIsCommentLine().apply(null, line)
         );
         shell.setConsole(console);
+    }
+
+    public static class CatchingShell extends BaseSpelShellImpl {
+        public Object runScriptCatchingException(String script, Object args) {
+            try {
+                return runScript(script, args);
+            } catch (Exception e) {
+                return null;
+            }
+        }
     }
 }
