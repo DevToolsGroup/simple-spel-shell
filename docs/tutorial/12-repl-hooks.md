@@ -1,7 +1,7 @@
 # 12. REPL Hooks: Prompts, Comments, and Interceptors
 
 Several earlier pages already used one `ReplConfig` hook or another without naming the mechanism:
-`Example2`'s dynamic submenu prompt in page 8, the history file in page 7.
+dynamic submenu prompt in page 8, the history file in page 7.
 This page names all five, in the order `CoreSpelShellImpl.runRepl()` actually calls them,
 and shows how to layer behavior onto the default without breaking it.
 
@@ -29,17 +29,31 @@ and logs to the history file.
 
 ## A dynamic prompt
 
-`Example2`'s submenus (page 8) set a `Function<Object, String>` prompt that reads live fields off the shell.
+Submenus example (page 8) set a `Function<Object, String>` prompt that reads live fields off the shell.
 Let's do the same at the top level — show how many tasks exist right in the prompt:
 
 ```java
-getReplConfig().setPrompt(_ -> "tasks(" + countTasks() + ")> ");
+package org.devtoolsgroup.tutorial.example10;
+
+public class TaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+    
+    public TaskShell(Path tasksDir) {
+        super(tasksDir);
+        getReplConfig().setPrompt(_ -> "tasks(" + countTasks() + ")> ");
+    }
+
+    ...
+
+    private int countTasks() {
+        return (int) findFilesByName(new NamePattern("")).stream().filter(File::isFile).count();
+    }
+}
 ```
 
-```java
-private int countTasks() {
-    return (int) findFilesByName(new NamePattern("")).stream().filter(File::isFile).count();
-}
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example10.TaskShell
 ```
 
 ```
@@ -65,7 +79,7 @@ getReplConfig().setIsCommentLine((_, line) -> {
 
 Now both `// like this` and `# like this` are treated as comments in scripts (page 7) and skipped while reading.
 
-## Wrapping — not replacing — the expression interceptor
+## The expression interceptor
 
 `isCommentLine` was safe to overwrite because it does one small thing.
 `expressionInterceptor` is different: it's what makes shorthand syntax and history logging work at all,
@@ -75,17 +89,44 @@ The pattern to reach for
 is to capture the existing interceptor and call it from inside your replacement:
 
 ```java
-BiFunction<Object, String, String> defaultInterceptor = getReplConfig().getExpressionInterceptor();
-getReplConfig().setExpressionInterceptor((root, expr) -> {
-    String rewritten = defaultInterceptor.apply(root, expr);
-    System.err.println("[audit] " + expr + " -> " + rewritten);
-    return rewritten;
-});
+package org.devtoolsgroup.tutorial.example11;
+
+public class TaskShell extends BaseSpelShellImpl {
+
+    ...
+    
+    public TaskShell() {
+        BiFunction<Object, String, String> defaultInterceptor = getReplConfig().getExpressionInterceptor();
+        getReplConfig().setExpressionInterceptor((root, expr) -> {
+            String rewritten = defaultInterceptor.apply(root, expr);
+            System.err.println("[audit] " + expr + " -> " + rewritten);
+            return rewritten;
+        });
+    }
+
+    ...
+}
 ```
 
 This adds a simple audit trail to stderr while leaving shorthand rewriting and history logging fully intact
 — `defaultInterceptor.apply(root, expr)` still does that work;
-we're only observing its result on the way past.
+we're only observing its result on the way past:
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example11.TaskShell
+```
+
+```text
+SpEL> at 'Buy milk'
+[audit] at 'Buy milk' -> addTask('Buy milk')
+Added: Buy milk
+SpEL> he `tas
+[audit] he `tas -> help(npat('tas'))
+addTask(title: String): void
+completeTask(title: String): void
+listTasks(): void
+SpEL> 
+```
 
 ## `exprBeforeEvalInterceptor`
 
