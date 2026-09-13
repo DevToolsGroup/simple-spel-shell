@@ -37,27 +37,34 @@ Adding your own converter uses the same pattern.
 
 ## A `String → LocalDate` converter
 
-**Read the existing list before writing a new one.**
 `setTypeConverters` *replaces* the whole list rather than appending to it
 — call it with a fresh list containing only your new converter,
 and you'd silently lose the `Path`/`NamePattern` converters `FileSystemAwareSpelShellImpl` already registered,
 breaking `cd`, `mkdir`, and every other command that relies on them.
-The fix is the same read-modify-write shown above: fetch the current list, add to a copy, write the copy back.
+So, you need to **read the existing list before writing a new one**
+as shown above: fetch the current list, add to a copy, write the copy back.
 
 ```java
-public TaskShell(Path tasksDir) {
-    super(tasksDir);
-    setMinOrderForHelp(0);
-    setOnExit(ShellUtils.exnExit(true));
+package org.devtoolsgroup.tutorial.example9;
 
-    List<Converter<?, ?>> converters = new ArrayList<>(getSpelEvaluator().getTypeConverters());
-    converters.add(new Converter<String, LocalDate>() {
-        @Override
-        public LocalDate convert(String source) {
-            return LocalDate.parse(source);
-        }
-    });
-    getSpelEvaluator().setTypeConverters(converters);
+public class TaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+
+    public TaskShell(Path tasksDir) {
+        super(tasksDir);
+        List<Converter<?, ?>> converters = new ArrayList<>(getSpelEvaluator().getTypeConverters());
+        converters.add(new Converter<String, LocalDate>() {
+            @Override
+            public LocalDate convert(String source) {
+                return LocalDate.parse(source);
+            }
+        });
+        getSpelEvaluator().setTypeConverters(converters);
+    }
+
+    ...
+    
 }
 ```
 
@@ -66,13 +73,23 @@ public TaskShell(Path tasksDir) {
 Add a command that takes a `LocalDate`, and store the due date as a second line in the task file:
 
 ```java
-public void setDueDate(String title, LocalDate date) {
-    Path taskFile = Path.of(title + ".task");
-    if (!getFile(taskFile).exists()) {
-        throw new ShellException(false, "No such task: " + title);
+package org.devtoolsgroup.tutorial.example9;
+
+public class TaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+
+    public void setDueDate(String title, LocalDate date) {
+        Path taskFile = Path.of(title + ".task");
+        if (!getFile(taskFile).exists()) {
+            println("No such task: " + title);
+            return;
+        }
+        String status = read(taskFile).lines().findFirst().orElse("pending");
+        write(taskFile, status + "\n" + date);
     }
-    String status = read(taskFile).lines().findFirst().orElse("pending");
-    write(taskFile, status + "\n" + date);
+
+    ...
 }
 ```
 
@@ -80,6 +97,10 @@ public void setDueDate(String title, LocalDate date) {
 so — as noted back on page 3 — it isn't eligible for the `cmd arg` shorthand;
 call it with a full, parenthesized SpEL expression.
 The second argument is still typed as a plain quoted string:
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example9.TaskShell
+```
 
 ```
 SpEL> setDueDate('Buy milk', '2026-09-20')
@@ -90,9 +111,6 @@ sees the second argument is a `String` where a `LocalDate` is needed,
 and reaches for the registered `TypeConverter` to bridge the gap
 — the same conversion step that already makes `cd('tasks')` work for a `Path` parameter,
 just with a converter you wrote instead of one the framework shipped.
-
-We'll put this due date to work in [page 13](13-operator-overloading.md),
-shifting it by a number of days using a fuzzy task-name match.
 
 ---
 Previous: [10. Error Handling: ShellException vs ShellExitException](10-error-handling.md) · Next: [12. REPL Hooks: Prompts, Comments, and Interceptors](12-repl-hooks.md)
