@@ -5,28 +5,6 @@ A short closing tour of the remaining hooks
 shown here as standalone snippets rather than folded into `TaskShell` —
 plus an honest note on what isn't customizable yet.
 
-## `getRootObject()` — evaluating against a different object
-
-Every expression is evaluated with `getRootObject()` as SpEL's root,
-and `CoreSpelShellImpl`'s default implementation is simply `return this;`.
-Overriding it lets commands, prompts, and interceptors keep running on the shell instance
-while SpEL expressions themselves resolve against something else entirely
-— useful if you're wrapping an existing domain object
-rather than putting all your commands directly on the shell class:
-
-```java
-private final Inventory inventory = new Inventory();
-
-@Override
-protected Object getRootObject() {
-    return inventory;
-}
-```
-
-With this override, typed expressions call methods on `inventory`, not on the shell
-— while `help`, shorthand rewriting, and history still work the same way,
-since those look at `getRootObject().getClass()` rather than assuming it's always `this`.
-
 ## Custom visibility policy
 
 `@Order` (page 6) is the normal way to control what's shorthand-eligible and what shows in `help`,
@@ -49,25 +27,12 @@ This is the mechanism `@Order`-based filtering is itself built on
 so a subclass can layer arbitrary additional rules (naming conventions, annotations, anything reflectable)
 on top of the default order-based ones.
 
-## Working with variables directly
-
-`var(...)` (page 4) is a thin shell command wrapping three methods on `SpelEvaluator` itself:
-`addVariable(String name, Object value)`, `getVariable(String name)`, and `getAllVariables()`
-(which returns a defensive copy — mutating it has no effect on the shell's actual variable table).
-Calling these directly from your own Java code, rather than through the `var` command,
-is occasionally useful for wiring up state from outside the REPL loop entirely
-— for instance, seeding a variable before the first prompt is ever shown:
-
-```java
-getSpelEvaluator().addVariable("startedAt", Instant.now());
-```
-
 ## The auto-printed result
 
 Two more small knobs on `CoreSpelShellImpl`, both defaulted in its constructor:
 `lastEvalResultVarName` (default `"$"`) is the SpEL variable name
 the previous result is stashed under after every evaluation
-— so `#$` always refers to whatever you last evaluated, the way `#sum`/`#prod` did across submenus in page 8.
+— so `#$` always refers to whatever you last evaluated.
 `lastEvalResultMaxPrintLength` (default `100`) controls how much of a result's `toString()`
 the default `evalResultInterceptor` (page 12) prints before truncating with `...`.
 Both have setters (`setLastEvalResultVarName`,
