@@ -51,7 +51,14 @@ mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=<example-
 Replace `<example-class>` with the fully-qualified name of the example you want to run. For the `TaskShell` example above, that's `org.devtoolsgroup.tutorial.example1.TaskShell`:
 
 ```
-$ mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example1.TaskShell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example1.TaskShell
+```
+
+The command above will start a maven build. 
+When the build completes you will see a prompt `SpEL>`.
+This means the example code has started, and you can enter your commands:
+
+```
 SpEL> addTask('Buy milk')
 Added: Buy milk
 SpEL> addTask('Walk the dog')
