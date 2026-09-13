@@ -1,0 +1,3 @@
+// seed a couple of starter tasks
+addTask 'Buy milk'
+addTask 'Walk the dog'
