@@ -1,9 +1,12 @@
-# 10. Error Handling: ShellException vs ShellExitException
+WARN: this page contains many hallucinations
+
+# 10. Error Handling: ShellException and stopOnException
 
 `completeTask` currently prints "No such task" and moves on when given a bad title.
 This page replaces that with a real exception,
-and explains the two exception types the framework treats specially,
-plus a subtlety in customizing which errors are fatal.
+and explains the one exception type the framework treats specially,
+plus the generic `stopOnException` mechanism it's built on top of
+— and a subtlety in customizing which errors are fatal.
 
 ## `ShellException`: a recoverable error
 
@@ -35,19 +38,31 @@ gets its message *and* a full stack trace printed the same way,
 then the loop continues regardless
 — as long as it isn't the configured `stopOnException` type.
 
-## `ShellExitException`: the one that stops the loop
+## `stopOnException`: what actually ends the loop
 
-`ReplConfig.stopOnException` names a single exception class;
-whenever a thrown exception is an instance of that class,
-`runRepl()` rethrows it instead of catching it, ending the loop.
+`ShellExitException` itself gets no special treatment from the framework.
+It's an ordinary unchecked exception (see `ShellExitException.java`)
+with one extra field, `result` — nothing in `runRepl()` checks for it by name or type.
+
+What does end the loop is `ReplConfig.stopOnException`:
+a single exception class, checked with `isAssignableFrom` against whatever was thrown.
+Whenever a caught exception matches it, `runRepl()`'s `catch` block rethrows it instead of handling it,
+which unwinds out of that call to `runRepl()` instead of looping again.
 The defaults, set in `CoreSpelShellImpl`'s constructor, are:
 
 - **Interactive `runRepl()`**: `ShellExitException.class`
-— which is exactly what the built-in `exit()` command throws (via `getOnExit()`),
-so typing `exit` naturally ends the loop, and nothing else does.
+— a convenient default, not something the framework treats as special in its own right.
 - **Scripts** (`runScript(...)`): plain `Exception.class`
 — any exception at all aborts a script,
 since there's no user at the prompt to read an error message and try again.
+
+Note that the built-in `exit()` command does *not* throw `ShellExitException` by default.
+Its default `onExit` handler, set in `BaseSpelShellImpl`, is `_ -> System.exit(0)`
+— it terminates the JVM directly and never reaches `runRepl()`'s `catch` block at all.
+`exit()` only throws `ShellExitException` when a shell wires it to do so with
+`setOnExit(ShellUtils.exnExit(...))`, exactly as [page 8](08-submenus.md) does for `TaskShell`
+so that "going back" from `TaskDetailShell` can unwind through a caught exception
+instead of ending the whole program.
 
 This is why `ShellException` from `completeTask` doesn't end the interactive session:
 it isn't a `ShellExitException`, so it doesn't match the default `stopOnException`.
@@ -73,11 +88,12 @@ getReplConfig().setStopOnException(TaskNotFoundException.class);
 ```
 
 Now throwing `TaskNotFoundException` from `completeTask` does stop the loop
-— but so does calling `exit()`, in effect, *stop working*:
-`exit()` still throws `ShellExitException`,
-but that's no longer the configured `stopOnException`,
-so the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it
-— printing a full stack trace (since `ShellExitException` isn't a `ShellException`)
+— but so does calling `exit()`, in effect, *stop working*.
+Recall that `TaskShell`'s `exit()` throws `ShellExitException(true)`,
+because of the `setOnExit(ShellUtils.exnExit(true))` call from [page 8](08-submenus.md)
+— and that's no longer the configured `stopOnException`,
+so the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it,
+printing a full stack trace (since `ShellExitException` isn't a `ShellException`)
 and looping again, leaving you stuck at the prompt with `exit` seemingly not working.
 
 The clean way to make a domain error end the session *without* breaking `exit()`
