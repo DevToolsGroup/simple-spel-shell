@@ -99,5 +99,7 @@ Walk the dog
 
 Both starter tasks are already there by the time the interactive prompt appears.
 
+todo: mention long expressions in scripts.
+
 ---
 Previous: [6. Controlling Help and Shorthand Visibility with @Order](06-order-and-help-visibility.md) · Next: [8. Sub-shells and Menu-Driven CLIs](08-submenus.md)

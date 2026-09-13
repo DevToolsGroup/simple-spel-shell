@@ -9,6 +9,8 @@ This page adds a `viewTask` command that opens a focused sub-shell for editing o
 Editing a single task's fields needs more than a `String` title, so `tasks` becomes a list of small `Task` objects:
 
 ```java
+package org.devtoolsgroup.tutorial.example7;
+
 public class Task {
     String title;
     boolean done;
@@ -18,35 +20,44 @@ public class Task {
         this.title = title;
     }
 }
-```
 
-```java
-private final List<Task> tasks = new ArrayList<>();
+public class TaskShell extends BaseSpelShellImpl {
 
-public void addTask(String title) {
-    tasks.add(new Task(title));
-    println("Added: " + title);
-}
+    private final List<Task> tasks = new ArrayList<>();
 
-public void listTasks() {
-    if (tasks.isEmpty()) {
-        println("No tasks yet.");
-        return;
+    public static void main(String[] args) {
+        new TaskShell().runRepl();
     }
-    tasks.forEach(t -> println((t.done ? "[x] " : "[ ] ") + t.title));
-}
+    
+    ...
 
-public void completeTask(String title) {
-    Task task = findTask(title);
-    if (task == null) {
-        println("No such task: " + title);
-        return;
+    public void addTask(String title) {
+        tasks.add(new Task(title));
+        println("Added: " + title);
     }
-    task.done = true;
-}
 
-private Task findTask(String title) {
-    return tasks.stream().filter(t -> t.title.equals(title)).findFirst().orElse(null);
+    public void listTasks() {
+        if (tasks.isEmpty()) {
+            println("No tasks yet.");
+            return;
+        }
+        tasks.forEach(t -> println((t.done ? "[x] " : "[ ] ") + t.title));
+    }
+
+    public void completeTask(String title) {
+        Task task = findTask(title);
+        if (task == null) {
+            println("No such task: " + title);
+            return;
+        }
+        task.done = true;
+    }
+    
+    ...
+
+    private Task findTask(String title) {
+        return tasks.stream().filter(t -> t.title.equals(title)).findFirst().orElse(null);
+    }
 }
 ```
 
@@ -60,25 +71,34 @@ with its own commands (`rename`, `markDone`, `addNote`)
 and its own dynamic prompt:
 
 ```java
-public void viewTask(String title) {
-    Task task = findTask(title);
-    if (task == null) {
-        println("No such task: " + title);
-        return;
+package org.devtoolsgroup.tutorial.example7;
+
+public class TaskShell extends BaseSpelShellImpl {
+
+    ...
+
+    public void viewTask(String title) {
+        Task task = findTask(title);
+        if (task == null) {
+            println("No such task: " + title);
+            return;
+        }
+        new TaskDetailShell(this, task).runRepl();
     }
-    new TaskDetailShell(this, task).runRepl();
+
+    ...
 }
 
-private static class TaskDetailShell extends BaseSpelShellImpl {
+public class TaskDetailShell extends BaseSpelShellImpl {
     private final Task task;
 
     TaskDetailShell(BaseSpelShell parent, Task task) {
         super(parent);
         this.task = task;
         getReplConfig().setPrompt(_ ->
-            "-------------------------------\n" +
-                "Task: " + task.title + (task.done ? " [done]" : "") + "\n" +
-                "[task] SpEL> "
+                "-------------------------------\n" +
+                        "Task: " + task.title + (task.done ? " [done]" : "") + "\n" +
+                        "[task] SpEL> "
         );
         setOnExit(ShellUtils.exnExit(false));
     }
@@ -118,27 +138,34 @@ and into `TaskShell`'s own `runRepl()` loop
 — where, by default, `ShellExitException` is exactly the exception class configured to stop *that* loop too.
 Left alone, "going back" from the sub-shell would silently exit `TaskShell` as well.
 
-The fix is to override `runRepl()` on `TaskShell` itself to catch that signal and loop instead of returning
-— the same pattern the framework's own `Example2` fixture uses for its main menu:
+The fix is to override `runRepl()` on `TaskShell` itself to catch that signal and loop instead of returning:
 
 ```java
-public TaskShell() {
-    setMinOrderForHelp(0);
-    setOnExit(ShellUtils.exnExit(true));
-}
+package org.devtoolsgroup.tutorial.example7;
 
-@Order(-1000)
-@Override
-public Object runRepl() {
-    while (true) {
-        try {
-            super.runRepl();
-        } catch (ShellExitException ex) {
-            if ((boolean) ex.getResult()) {
-                return null;
+public class TaskShell extends BaseSpelShellImpl {
+
+    ...
+
+    public TaskShell() {
+        setOnExit(ShellUtils.exnExit(true));
+    }
+
+    @Order(-1000)
+    @Override
+    public Object runRepl() {
+        while (true) {
+            try {
+                super.runRepl();
+            } catch (ShellExitException ex) {
+                if ((boolean) ex.getResult()) {
+                    return null;
+                }
             }
         }
     }
+    
+    ...
 }
 ```
 
@@ -149,7 +176,13 @@ public Object runRepl() {
 so the `while (true)` loop calls `super.runRepl()` again,
 re-entering the interactive loop right where the task list left off.
 
+See the full source code for this example in `src/test/java/org/devtoolsgroup/tutorial/example7`
+
 ## Trying it out
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example7.TaskShell
+```
 
 ```
 SpEL> at 'Buy milk'
@@ -160,7 +193,7 @@ Task: Buy milk
 [task] SpEL> markDone
 -------------------------------
 Task: Buy milk [done]
-[task] SpEL> addNote 'Get oat milk'
+[task] SpEL> addNote 'Bought two bottles'
 -------------------------------
 Task: Buy milk [done]
 [task] SpEL> exit
