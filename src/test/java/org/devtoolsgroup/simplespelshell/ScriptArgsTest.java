@@ -32,107 +32,137 @@ class ScriptArgsTest {
 
     @Test
     void scriptReceivesArgsViaUnderscoreVariable() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when
         Object result = shell.runScript("#_", "hello");
 
+        //then
         Assertions.assertEquals("hello", result);
     }
 
     @Test
     void noArgsScriptSeesNullArgs() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when
         Object result = shell.runScript("#_");
 
+        //then
         Assertions.assertNull(result);
     }
 
     @Test
     void nestedScriptGetsOwnArgsAndOuterIsRestoredAfterItReturns() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when
         Object result = shell.runScript(
             "runScript('#_', 'inner-args')\n#_",
             "outer-args"
         );
 
+        //then
         Assertions.assertEquals("outer-args", result);
     }
 
     @Test
     void mutatingArgsBeforeNestedCallIsPreservedAcrossIt() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when
         Object result = shell.runScript(
             "_ = 'mutated-outer-args'\nrunScript('#_', 'inner-args')\n#_",
             "original-outer-args"
         );
 
+        //then
         Assertions.assertEquals("mutated-outer-args", result);
     }
 
     @Test
     void noArgsNestedCallSeesNullNotParentArgs() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when
         Object result = shell.runScript("runScript('#_')", "outer-args");
 
+        //then
         Assertions.assertNull(result);
     }
 
     @Test
     void exceptionInNestedScriptStillRestoresOuterArgs() {
+        //given
         CatchingShell shell = new CatchingShell();
 
+        //when
         Object result = shell.runScript(
             "runScriptCatchingException('1/0', 'inner-args')\n#_",
             "outer-args"
         );
 
+        //then
         Assertions.assertEquals("outer-args", result);
     }
 
     @Test
     void exceptionPropagatingOutOfTopLevelScriptLeavesArgsUnset() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
 
+        //when/then
         Assertions.assertThrows(
             ArithmeticException.class,
             () -> shell.runScript("runScript('1/0', 'inner-args')", "outer-args")
         );
 
+        //then
         Assertions.assertNull(shell.getSpelEvaluator().getVariable("_"));
     }
 
     @Test
     void scriptArgsVarNameIsConfigurable() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
         shell.getSpelEvaluator().setScriptArgsVarName("args");
 
+        //when
         Object result = shell.runScript("#args", "hello");
 
+        //then
         Assertions.assertEquals("hello", result);
         Assertions.assertEquals("args", shell.getSpelEvaluator().getScriptArgsVarName());
     }
 
     @Test
     void replReceivesArgsViaUnderscoreVariable() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
         connectConsole(shell, "#_");
 
+        //when
         Object result = shell.runRepl("hello");
 
+        //then
         Assertions.assertEquals("hello", result);
     }
 
     @Test
     void nestedScriptInsideReplRestoresReplArgs() {
+        //given
         BaseSpelShellImpl shell = new BaseSpelShellImpl();
         connectConsole(shell, "runScript('#_', 'inner-args')\n#_");
 
+        //when
         Object result = shell.runRepl("repl-args");
 
+        //then
         Assertions.assertEquals("repl-args", result);
     }
 
