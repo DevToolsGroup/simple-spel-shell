@@ -9,14 +9,14 @@ Covered in [tutorial page 3](../tutorial/03-shorthand-and-fuzzy-matching.md). Tr
 
 | Pattern | Rewritten to |
 |---|---|
-| `IDENT` | `IDENT()` |
-| `IDENT rest` | `IDENT(rest)` |
-| `IDENT = rest` | `var('IDENT', rest)` |
-| `IDENT1 = IDENT2` | `var('IDENT1', IDENT2())` |
-| `IDENT1 = IDENT2 rest` | `var('IDENT1', IDENT2(rest))` |
+| `IDENTIFIER1 = IDENTIFIER2 rest` | `var('IDENTIFIER1', IDENTIFIER2(rest))` |
+| `IDENTIFIER1 = IDENTIFIER2` | `var('IDENTIFIER1', IDENTIFIER2())` |
+| `IDENTIFIER = rest` | `var('IDENTIFIER', rest)` |
+| `IDENTIFIER rest` | `IDENTIFIER(rest)` |
+| `IDENTIFIER` | `IDENTIFIER()` |
 | *(no match)* | Returned unchanged, evaluated as raw SpEL. |
 
-`IDENT` (and `IDENT2`, the method name) is fuzzy-matched against the shell's exposed zero-arg or one-arg
+`IDENTIFIER` (and `IDENTIFIER2`, the method name) is fuzzy-matched against the shell's exposed zero-arg or one-arg
 method names, as appropriate, via `matches(...)` below
 — throwing `ShellException` if zero or more than one method matches.
 
