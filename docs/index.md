@@ -2,13 +2,14 @@
 
 simple-spel-shell turns a plain Java class into an interactive CLI shell: every public method you add becomes a command,
 and everything you type at the prompt is evaluated as a [Spring Expression Language (SpEL)](https://docs.spring.io/spring-framework/reference/core/expressions.html) expression against your shell object.
-This documentation set has two parts:
+This documentation set has three parts:
 
 - **[The tutorial](#tutorial)** — a step-by-step guide, in reading order,
 that builds one small CLI tool (a task tracker)
 from an empty class up through every feature the framework offers.
 - **[The reference](#reference)** — short, skimmable pages you come back to once you already know the concepts
 and just need a signature.
+- **[Features](#features)** — deep dives into individual features that landed after the tutorial was written.
 
 If you haven't yet, start with the root [README](../README.md) for a one-page overview, then come back here.
 
@@ -58,3 +59,11 @@ with links back to the tutorial page that teaches each concept in context.
 - [Exceptions](reference/exceptions.md) — `ShellException` and `ShellExitException`.
 
 See [reference/index.md](reference/index.md) for a single flat table across all of the above.
+
+## Features
+
+Standalone write-ups for individual features, each covering the motivation and implementation in more depth
+than the tutorial or reference pages do.
+
+- [Script Arguments](features/script-args.md) — passing an `Object args` value into `runScript(...)`/`runRepl()`,
+read back inside as `#_` — mentioned in passing on [tutorial page 7](tutorial/07-history-and-scripting.md).

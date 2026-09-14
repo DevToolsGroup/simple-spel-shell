@@ -99,6 +99,13 @@ Walk the dog
 
 Both starter tasks are already there by the time the interactive prompt appears.
 
+## Passing arguments to a script
+
+Every `runScript(...)` overload shown above (and `runRepl()`) has a sibling taking an `Object args` parameter,
+made available inside the script as the SpEL variable `#_`, so a script can be a small, parameterized unit of work
+instead of relying on global shell state.
+See [Script Arguments](../features/script-args.md) for the full picture.
+
 ## Splitting a long expression across lines
 
 A line ending in `\` gets joined with the next one before evaluation, with the backslash stripped
