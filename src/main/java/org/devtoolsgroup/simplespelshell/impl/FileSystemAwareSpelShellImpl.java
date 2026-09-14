@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -270,14 +271,14 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
                 }
             }
 
-            int width = String.valueOf(maxSize).length();
+            int width = String.format(Locale.US, "%,d", maxSize).length();
 
             for (Path absPath : absPaths) {
                 Path relPath = workingDirectory.getCurDirAbsolutePath().relativize(absPath);
                 if (Files.isDirectory(absPath)) {
                     printf("%" + width + "s %s/\n", "", relPath);
                 } else {
-                    printf("%" + width + "d %s\n", Files.size(absPath), relPath);
+                    printf("%" + width + "s %s\n", String.format(Locale.US, "%,d", Files.size(absPath)), relPath);
                 }
             }
         } catch (IOException e) {
