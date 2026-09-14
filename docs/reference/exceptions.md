@@ -6,7 +6,7 @@ Full walkthrough: [tutorial page 10](../tutorial/10-error-handling.md).
 ## `ShellException`
 
 `org.devtoolsgroup.simplespelshell.ShellException extends RuntimeException` — a recoverable error.
-Not fatal by default: the loop catches it, prints its message, and continues.
+Not fatal by default: the REPL loop catches it, prints its message, and continues.
 
 | Constructor | `isPrintStackTrace()` |
 |---|---|
@@ -22,7 +22,7 @@ for a clean, single-line error.
 ## `ShellExitException`
 
 `org.devtoolsgroup.simplespelshell.ShellExitException extends RuntimeException`
-— the default `stopOnException` type for the interactive loop ([ReplConfig reference](repl-config.md));
+— the default `stopOnException` type for the REPL loop ([ReplConfig reference](repl-config.md));
 throwing one ends `runRepl()`.
 
 | Constructor | Notes |

@@ -7,13 +7,13 @@ Full walkthrough: [tutorial page 12](../tutorial/12-repl-hooks.md).
 
 | Field | Type | Default | Fires |
 |---|---|---|---|
-| `prompt` | `Function<Object, String>` | `_ -> "SpEL> "` (repl); `null` (script) | Before reading a line, if non-`null`. |
+| `prompt` | `Function<Object, String>` | `_ -> "SpEL> "` (REPL); `null` (script) | Before reading a line, if non-`null`. |
 | `isCommentLine` | `BiFunction<Object, String, Boolean>` | `(_, s) -> s.trim().startsWith("//")` | While reading — matching lines are skipped. |
 | `expressionInterceptor` | `BiFunction<Object, String, String>` | shorthand rewrite + history logging (wrapped once more by `BaseSpelShellImpl` for backtick expansion) | After a full expression is read. |
 | `exprBeforeEvalInterceptor` | `BiConsumer<Object, String>` | `null` | Right before evaluation, with the final expression. |
 | `evalResultInterceptor` | `BiConsumer<Object, Object>` | prints the truncated, non-`null` result | Right after evaluation, with the result. |
 | `exprHistoryFile` | `File` | `null` (off) | N/A — read by `hist(...)`, written by the default `expressionInterceptor`. See [page 7](../tutorial/07-history-and-scripting.md). |
-| `stopOnException` | `Class<? extends Exception>` | `ShellExitException.class` (repl); `Exception.class` (script) | An exception whose class this is assignable from ends `runRepl()` instead of being caught and printed. See [page 10](../tutorial/10-error-handling.md). |
+| `stopOnException` | `Class<? extends Exception>` | `ShellExitException.class` (REPL); `Exception.class` (script) | An exception whose class this is assignable from ends `runRepl()` instead of being caught and printed. See [page 10](../tutorial/10-error-handling.md). |
 
 Accessors follow the standard `getX()`/`setX(...)` pattern for every field above.
 
