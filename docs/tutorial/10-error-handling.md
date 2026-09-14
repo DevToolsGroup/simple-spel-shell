@@ -1,5 +1,3 @@
-todo: WARN this page contains many hallucinations
-
 # 10. Error Handling: ShellException and stopOnException
 
 `completeTask` currently prints "No such task" and moves on when given a bad title.
@@ -11,18 +9,29 @@ plus the generic `stopOnException` mechanism it's built on top of
 ## `ShellException`: a recoverable error
 
 ```java
-public void completeTask(String title) {
-    Path taskFile = Path.of(title + ".task");
-    if (!getFile(taskFile).exists()) {
-        throw new ShellException(false, "No such task: " + title);
+package org.devtoolsgroup.tutorial.example8;
+
+public class PrintErrorViaExceptionTaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+
+    public void completeTask(String title) {
+        Path taskFile = Path.of(title + ".task");
+        if (!getFile(taskFile).exists()) {
+            throw new ShellException(false, "No such task: " + title);
+        }
+        write(taskFile, "done");
     }
-    write(taskFile, "done");
 }
 ```
 
 `ShellException(boolean printStackTrace, String message)` is an unchecked exception
 the REPL loop already knows how to handle without your help.
 By default, throwing one doesn't end `runRepl()` — the loop's own `try`/`catch` prints the message and keeps going:
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example8.PrintErrorViaExceptionTaskShell
+```
 
 ```
 SpEL> completeTask 'Nonexistent'
@@ -87,12 +96,12 @@ class TaskNotFoundException extends RuntimeException {
 getReplConfig().setStopOnException(TaskNotFoundException.class);
 ```
 
-Now throwing `TaskNotFoundException` from `completeTask` does stop the loop
-— but so does calling `exit()`, in effect, *stop working*.
+Now throwing `TaskNotFoundException` from `completeTask` does stop the loop.
+But that breaks `exit()`, calling it will not exit the loop.
 Recall that `TaskShell`'s `exit()` throws `ShellExitException(true)`,
 because of the `setOnExit(ShellUtils.exnExit(true))` call from [page 8](08-submenus.md)
-— and that's no longer the configured `stopOnException`,
-so the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it,
+— and that's no longer the configured `stopOnException`.
+So the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it,
 printing a full stack trace (since `ShellExitException` isn't a `ShellException`)
 and looping again, leaving you stuck at the prompt with `exit` seemingly not working.
 
