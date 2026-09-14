@@ -1,0 +1,129 @@
+# 10. Error Handling: ShellException and stopOnException
+
+`completeTask` currently prints "No such task" and moves on when given a bad title.
+This page replaces that with a real exception,
+and explains the one exception type the framework treats specially,
+plus the generic `stopOnException` mechanism it's built on top of
+— and a subtlety in customizing which errors are fatal.
+
+## `ShellException`: a recoverable error
+
+```java
+package org.devtoolsgroup.tutorial.example8;
+
+public class PrintErrorViaExceptionTaskShell extends FileSystemAwareSpelShellImpl {
+
+    ...
+
+    public void completeTask(String title) {
+        Path taskFile = Path.of(title + ".task");
+        if (!getFile(taskFile).exists()) {
+            throw new ShellException(false, "No such task: " + title);
+        }
+        write(taskFile, "done");
+    }
+}
+```
+
+`ShellException(boolean printStackTrace, String message)` is an unchecked exception
+the REPL loop already knows how to handle without your help.
+By default, throwing one doesn't end `runRepl()` — the loop's own `try`/`catch` prints the message and keeps going:
+
+```shell
+mvn test-compile exec:java -Dexec.classpathScope=test -Dexec.mainClass=org.devtoolsgroup.tutorial.example8.PrintErrorViaExceptionTaskShell
+```
+
+```
+SpEL> completeTask 'Nonexistent'
+No such task: Nonexistent
+SpEL> lt
+[ ] Buy milk
+```
+
+Passing `false` for `printStackTrace` is what keeps that output to a single clean line
+— the loop's catch block checks `ShellException.isPrintStackTrace()` and skips the stack trace when it's `false`.
+Any other exception type (a `NullPointerException` from a bug in your own code, for instance)
+gets its message *and* a full stack trace printed the same way,
+then the loop continues regardless
+— as long as it isn't the configured `stopOnException` type.
+
+## `stopOnException`: what actually ends the loop
+
+`ShellExitException` itself gets no special treatment from the framework.
+It's an ordinary unchecked exception (see `ShellExitException.java`)
+with one extra field, `result` — nothing in `runRepl()` checks for it by name or type.
+
+What does end the loop is `ReplConfig.stopOnException`:
+a single exception class, checked with `isAssignableFrom` against whatever was thrown.
+Whenever a caught exception matches it, `runRepl()`'s `catch` block rethrows it instead of handling it,
+which unwinds out of that call to `runRepl()` instead of looping again.
+The defaults, set in `CoreSpelShellImpl`'s constructor, are:
+
+- **Interactive `runRepl()`**: `ShellExitException.class`
+— a convenient default, not something the framework treats as special in its own right.
+- **Scripts** (`runScript(...)`): plain `Exception.class`
+— any exception at all aborts a script,
+since there's no user at the prompt to read an error message and try again.
+
+Note that the built-in `exit()` command does *not* throw `ShellExitException` by default.
+Its default `onExit` handler, set in `BaseSpelShellImpl`, is `_ -> System.exit(0)`
+— it terminates the JVM directly and never reaches `runRepl()`'s `catch` block at all.
+`exit()` only throws `ShellExitException` when a shell wires it to do so with
+`setOnExit(ShellUtils.exnExit(...))`, exactly as [page 8](08-submenus.md) does for `TaskShell`
+so that "going back" from `TaskDetailShell` can unwind through a caught exception
+instead of ending the whole program.
+
+This is why `ShellException` from `completeTask` doesn't end the interactive session:
+it isn't a `ShellExitException`, so it doesn't match the default `stopOnException`.
+
+## Customizing `stopOnException` — and its sharp edge
+
+`ReplConfig.setStopOnException(Class<? extends Exception>)` lets you change what's fatal.
+The subtlety: it's a *single* class, checked with `isAssignableFrom`
+— setting it doesn't add to the default, it **replaces** it.
+
+Suppose you tried this directly:
+
+```java
+class TaskNotFoundException extends RuntimeException {
+    TaskNotFoundException(String title) {
+        super("No such task: " + title);
+    }
+}
+```
+
+```java
+getReplConfig().setStopOnException(TaskNotFoundException.class);
+```
+
+Now throwing `TaskNotFoundException` from `completeTask` does stop the loop.
+But that breaks `exit()`, calling it will not exit the loop.
+Recall that `TaskShell`'s `exit()` in example 7 throws `ShellExitException(true)`,
+because of the `setOnExit(ShellUtils.exnExit(true))` call from [page 8](08-submenus.md)
+— and that's no longer the configured `stopOnException`.
+So the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it,
+printing a full stack trace (since `ShellExitException` isn't a `ShellException`)
+and looping again, leaving you stuck at the prompt with `exit` seemingly not working.
+
+The clean way to make a domain error end the session *without* breaking `exit()`
+is to let it flow through the existing mechanism rather than replacing it
+— by making the error itself a kind of `ShellExitException`:
+
+```java
+class FatalTaskStoreException extends ShellExitException {
+    FatalTaskStoreException() {
+        super(true);
+    }
+}
+```
+
+Since `FatalTaskStoreException` *is* a `ShellExitException`, it already matches the default `stopOnException`
+— no `setStopOnException` call needed —
+and `TaskShell`'s own `runRepl()` override from [page 8](08-submenus.md) sees `ex.getResult()` as `true`,
+so it exits the whole program cleanly, exactly the way typing `exit` at the top-level menu does.
+Reach for `setStopOnException` when you genuinely want to change what's fatal *instead of* the default
+(for example, in a shell that doesn't rely on `exit()`'s default wiring at all);
+reach for a `ShellExitException` subclass when you want to add a new way to trigger the exit path that's already there.
+
+---
+Previous: [9. Sandboxed Filesystem Shells](09-filesystem-shells.md) · Next: [11. Custom Type Converters](11-custom-type-converters.md)
