@@ -30,11 +30,11 @@ which tries a handful of patterns in order and rewrites the first one that match
 
 | You type | Gets rewritten to |
 |---|---|
-| `cmd` (bare identifier) | `cmd()` |
-| `cmd arg` | `cmd(arg)` |
-| `x = value` | `var('x', value)` |
-| `x = cmd` | `var('x', cmd())` |
 | `x = cmd arg` | `var('x', cmd(arg))` |
+| `x = cmd` | `var('x', cmd())` |
+| `x = value` | `var('x', value)` |
+| `cmd arg` | `cmd(arg)` |
+| `cmd` (bare identifier) | `cmd()` |
 | anything else | left unchanged, evaluated as raw SpEL |
 
 The `arg` part is inserted verbatim as SpEL — it isn't quoted for you.
