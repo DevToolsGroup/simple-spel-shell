@@ -98,7 +98,7 @@ getReplConfig().setStopOnException(TaskNotFoundException.class);
 
 Now throwing `TaskNotFoundException` from `completeTask` does stop the loop.
 But that breaks `exit()`, calling it will not exit the loop.
-Recall that `TaskShell`'s `exit()` throws `ShellExitException(true)`,
+Recall that `TaskShell`'s `exit()` in example 7 throws `ShellExitException(true)`,
 because of the `setOnExit(ShellUtils.exnExit(true))` call from [page 8](08-submenus.md)
 — and that's no longer the configured `stopOnException`.
 So the loop's `catch (Exception ex)` block treats it like any other uncaught exception instead of rethrowing it,

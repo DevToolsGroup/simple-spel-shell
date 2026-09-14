@@ -61,7 +61,7 @@ and `String → NamePattern` converters automatically (see [page 11](../tutorial
 | `FileSystemAwareSpelShellImpl(Path initDir)` | Root shell; `initDir` **must already exist**. |
 | `FileSystemAwareSpelShellImpl(Console console, Path initDir)` | Root shell, custom console. |
 | `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell)` | Sub-shell sharing the parent's working directory. |
-| `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Console console, Path initDir)` |  |
+| `FileSystemAwareSpelShellImpl(FileSystemAwareSpelShell parentShell, Console console, Path initDir)` | The constructor the others delegate to; if `parentShell` is non-`null` it's a sub-shell with a custom console that still inherits the parent's working directory (`initDir` is then ignored). |
 
 `getWorkingDirectory()` exposes the underlying `WorkingDirectory`,
 which enforces the sandbox and throws `ShellException` on any attempt to `cd` or write outside the root directory.

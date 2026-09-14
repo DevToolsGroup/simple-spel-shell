@@ -20,7 +20,7 @@ Accessors follow the standard `getX()`/`setX(...)` pattern for every field above
 ## Order of operations inside `runRepl()`
 
 1. `prompt.apply(root)` is printed (if non-`null`).
-2. A line is read  (or several lines with trailing `\`).
+2. A line is read (or several lines with trailing `\`).
 3. `expressionInterceptor.apply(root, expr)` runs; its return value is what gets evaluated.
 A `null` ends the loop (EOF); a blank line is skipped.
 4. `exprBeforeEvalInterceptor.accept(root, expr)` runs, if non-`null`.
@@ -29,8 +29,9 @@ the result is stored under the `$` SpEL variable (configurable, [page 14](../tut
 6. `evalResultInterceptor.accept(root, result)` runs, if non-`null`.
 7. Any exception thrown during 1–6 is caught:
 if its class matches `stopOnException`, it's rethrown (ending the loop);
-otherwise its message and stack trace is printed,
-and the loop continues.
+otherwise its message is printed, along with a stack trace
+— the stack trace is not printed only when the exception is a `ShellException` with `printStackTrace = false`
+— and the loop continues.
 
 ---
 Back to [reference index](index.md) · [documentation index](../index.md)

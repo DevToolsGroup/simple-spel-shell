@@ -27,8 +27,6 @@ Every command available without writing a line of code, grouped by the class tha
 
 ## From `FileSystemAwareSpelShellImpl` — introduced on [page 9](../tutorial/09-filesystem-shells.md)
 
-All at order −100 unless noted.
-
 | Command                                  | Description                                                                                           |
 |------------------------------------------|-------------------------------------------------------------------------------------------------------|
 | `cd(Path)` / `cd()`                      | Change directory (bare form goes up one level); returns the new absolute path.                        |
