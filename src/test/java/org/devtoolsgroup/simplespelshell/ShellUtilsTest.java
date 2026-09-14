@@ -40,6 +40,18 @@ class ShellUtilsTest {
         Assertions.assertEquals("he npat('len')+123", ShellUtils.replaceAllNamePatterns("he `len`+123"));
     }
 
+    @Test
+    void expressionReaderJoinsTrailingBackslashLinesWithoutInsertingASpace() {
+        Assertions.assertEquals("abcdef", readOneExpression("abc\\\ndef"));
+        Assertions.assertEquals("abc def", readOneExpression("abc \\\ndef"));
+        Assertions.assertEquals("abc  def", readOneExpression("abc \\\n def"));
+        Assertions.assertEquals("abcdefghi", readOneExpression("abc\\\ndef\\\nghi"));
+    }
+
+    private String readOneExpression(String text) {
+        return ShellUtils.expressionReader(ShellUtils.lineReader(text), null).readExpression();
+    }
+
     private void testSplit(String name, String... expectedSplit) {
         Assertions.assertArrayEquals(expectedSplit, ShellUtils.splitForMatch(name));
     }

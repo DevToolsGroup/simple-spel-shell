@@ -101,22 +101,22 @@ Both starter tasks are already there by the time the interactive prompt appears.
 
 ## Splitting a long expression across lines
 
-A line ending in `\` gets joined with the next one before evaluation,
-with the backslash stripped and a single space inserted at the join point
+A line ending in `\` gets joined with the next one before evaluation, with the backslash stripped
+and the two lines concatenated exactly as written — no space is inserted for you
 — the same mechanism the interactive prompt itself uses for multi-line input,
 since both read through the same `ExpressionReader` (`ShellUtils.readExpr`, [ShellUtils reference](../reference/shell-utils.md)).
 It's most useful in a script, once one expression gets too long to read comfortably on a single line
 — for instance, a task with a long title:
 
 ```
-addTask('Draft the Q3 planning doc, circulate it for review,\
+addTask('Draft the Q3 planning doc, circulate it for review, \
 and schedule the kickoff meeting')
 ```
 
 Both lines are read as one expression before shorthand rewriting or evaluation ever sees them,
-becoming `addTask('Draft the Q3 planning doc, circulate it for review, and schedule the kickoff meeting')`.
-Leave no space of your own right before the `\`
-— the join always inserts exactly one, so an extra one there would leave a double space in the result.
+becoming `addTask('Draft the Q3 planning doc, circulate it for review, and schedule the kickoff meeting')`
+— note the trailing space before the `\` on the first line;
+drop it and the two halves join with no separator at all, producing `review,and` instead.
 `readExpr` keeps consuming lines as long as each one ends in `\`, so a chain can span more than two lines the same way.
 
 ---

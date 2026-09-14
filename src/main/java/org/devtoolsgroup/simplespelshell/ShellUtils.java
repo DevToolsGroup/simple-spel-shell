@@ -261,7 +261,7 @@ public class ShellUtils {
             }
             Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);
             if (matcher.matches()) {
-                sb.append(matcher.group(1)).append(" ");
+                sb.append(matcher.group(1));
             } else {
                 sb.append(line);
                 return sb.toString();
