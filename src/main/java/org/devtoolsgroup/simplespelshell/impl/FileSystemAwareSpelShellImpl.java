@@ -114,7 +114,10 @@ public class FileSystemAwareSpelShellImpl extends BaseSpelShellImpl implements F
     public Object runScript(Path path, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             ShellUtils.lineReader(workingDirectory.getFile(path)),
-            line -> getReplConfigForScript().getIsCommentLine().apply(getRootObject(), line)
+            line -> getReplConfigForScript().getIsCommentLine().apply(getRootObject(), line),
+            getReplConfigForScript().getExprBlockOpenMarker(),
+            getReplConfigForScript().getCommentBlockOpenMarker(),
+            getReplConfigForScript().getBlockCloseMarker()
         );
         return runWithArgs(args, () -> runRepl(getReplConfigForScript(), expressionReader));
     }

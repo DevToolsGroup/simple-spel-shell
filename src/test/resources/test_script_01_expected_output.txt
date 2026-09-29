@@ -46,6 +46,22 @@ SpEL> he `len`
 setLastEvalResultMaxPrintLength(lastEvalResultMaxPrintLength: int): void
       └ result: null
 
+// a multiline expression block, joined with no separator, just like trailing slashes
+SpEL> 1+2+3
+      ├ evaluating: 1+2+3
+      └ result: 6
+
+//<< a multiline comment block
+SpEL> 1+1
+      ├ evaluating: 1+1
+      └ result: 2
+
+//<< main comment
+    //<< nested comment
+SpEL> 2+2
+      ├ evaluating: 2+2
+      └ result: 4
+
 // create multiple variables with long names and find them by pattern
 SpEL> maximumElement=104
       ├ evaluating: var('maximumElement',104)

@@ -57,7 +57,10 @@ See [tutorial page 8](../tutorial/08-submenus.md).
 `lineReader(String|File|InputStream|...)` builds a `LineReader` from various sources;
 `expressionReader(LineReader, Function<String,Boolean> isCommentLine)` builds the `ExpressionReader`
 `runRepl()` reads from,
-handling comment-line skipping and trailing-`\` continuation (`readExpr`, private).
+handling comment-line skipping, trailing-`\` continuation,
+and `<<`/`>>`/`//<<`/`>>` multiline blocks (`readExpr`, private).
+A five-argument overload also takes the three block markers explicitly;
+see [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md) for the block syntax.
 
 ## Other
 

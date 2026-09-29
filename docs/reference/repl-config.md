@@ -9,6 +9,9 @@ Full walkthrough: [tutorial page 12](../tutorial/12-repl-hooks.md).
 |---|---|---|---|
 | `prompt` | `Function<Object, String>` | `_ -> "SpEL> "` (REPL); `null` (script) | Before reading a line, if non-`null`. |
 | `isCommentLine` | `BiFunction<Object, String, Boolean>` | `(_, s) -> s.trim().startsWith("//")` | While reading — matching lines are skipped. |
+| `exprBlockOpenMarker` | `String` | `"<<"` | While reading — opens a multiline expression block. |
+| `commentBlockOpenMarker` | `String` | `"//<<"` | While reading — opens a multiline comment block, independent of `isCommentLine`. |
+| `blockCloseMarker` | `String` | `">>"` | While reading — closes either block kind. |
 | `expressionInterceptor` | `BiFunction<Object, String, String>` | shorthand rewrite + history logging (wrapped once more by `BaseSpelShellImpl` for backtick expansion) | After a full expression is read. |
 | `exprBeforeEvalInterceptor` | `BiConsumer<Object, String>` | `null` | Right before evaluation, with the final expression. |
 | `evalResultInterceptor` | `BiConsumer<Object, Object>` | prints the truncated, non-`null` result | Right after evaluation, with the result. |
@@ -20,7 +23,8 @@ Accessors follow the standard `getX()`/`setX(...)` pattern for every field above
 ## Order of operations inside `runRepl()`
 
 1. `prompt.apply(root)` is printed (if non-`null`).
-2. A line is read (or several lines with trailing `\`).
+2. A line is read — or several lines, via trailing `\` continuation or a `<<`/`//<<` ... `>>` block
+(see [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md)).
 3. `expressionInterceptor.apply(root, expr)` runs; its return value is what gets evaluated.
 A `null` ends the loop (EOF); a blank line is skipped.
 4. `exprBeforeEvalInterceptor.accept(root, expr)` runs, if non-`null`.

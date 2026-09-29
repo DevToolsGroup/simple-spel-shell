@@ -3,6 +3,8 @@ package org.devtoolsgroup.simplespelshell;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.util.function.Function;
+
 class ShellUtilsTest {
 
     @Test
@@ -46,6 +48,149 @@ class ShellUtilsTest {
         Assertions.assertEquals("abc def", readOneExpression("abc \\\ndef"));
         Assertions.assertEquals("abc  def", readOneExpression("abc \\\n def"));
         Assertions.assertEquals("abcdefghi", readOneExpression("abc\\\ndef\\\nghi"));
+    }
+
+    @Test
+    void expressionReaderJoinsExpressionBlockLinesWithNoSeparatorJustLikeTrailingBackslash() {
+        Assertions.assertEquals("abcdef", readOneExpression("<<abc\ndef\n>>"));
+        Assertions.assertEquals("abc def", readOneExpression("<<abc \ndef\n>>"));
+        Assertions.assertEquals("abc  def", readOneExpression("<<abc \n def\n>>"));
+        Assertions.assertEquals("abcdefghi", readOneExpression("<<abc\ndef\nghi\n>>"));
+    }
+
+    @Test
+    void expressionReaderRequiresNoWhitespaceAfterOpenerAndTakesContentFullyLiterally() {
+        // no space after '<<': content starts immediately, exactly as typed, nothing stripped.
+        Assertions.assertEquals("foo", readOneExpression("<<foo\n>>"));
+        // whitespace right after '<<', if any, is literal content too - none of it is stripped as a separator.
+        Assertions.assertEquals(" foo", readOneExpression("<< foo\n>>"));
+        Assertions.assertEquals("  foo", readOneExpression("<<  foo\n>>"));
+    }
+
+    @Test
+    void expressionReaderTreatsBareOpenerAsContributingNoContentOfItsOwn() {
+        Assertions.assertEquals("foobar", readOneExpression("<<\nfoo\nbar\n>>"));
+        Assertions.assertEquals("", readOneExpression("<<\n>>"));
+    }
+
+    @Test
+    void expressionReaderTreatsCloseMarkerLineTakingSurroundingWhitespace() {
+        Assertions.assertEquals(" foo", readOneExpression("<< foo\n   >>  "));
+    }
+
+    @Test
+    void expressionReaderToleratesLeadingWhitespaceBeforeOpenerButNotAfterIt() {
+        Assertions.assertEquals("foo", readOneExpression("  <<foo\n>>"));
+        Assertions.assertEquals(" foo", readOneExpression("  << foo\n>>"));
+    }
+
+    @Test
+    void expressionReaderTreatsExpressionBlockContentVerbatimNoCommentOrBackslashHandlingInside() {
+        Assertions.assertEquals(
+            " // not a comment in herestill \\ literal backslash",
+            readOneExpression("<< // not a comment in here\nstill \\ literal backslash\n>>")
+        );
+    }
+
+    @Test
+    void expressionReaderThrowsOnUnterminatedExpressionBlock() {
+        ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("<< foo\nbar"));
+        Assertions.assertFalse(ex.isPrintStackTrace());
+    }
+
+    @Test
+    void expressionReaderSkipsCommentBlockAndContinuesToNextExpression() {
+        Assertions.assertEquals(
+            "1+2",
+            readOneExpression("//<< a multiline comment\nthat uses a single //\nat the very beginning only\n>>\n1+2")
+        );
+    }
+
+    @Test
+    void expressionReaderRequiresNoWhitespaceAfterCommentBlockOpener() {
+        Assertions.assertEquals("1+2", readOneExpression("//<<no space here\nstill discarded\n>>\n1+2"));
+    }
+
+    @Test
+    void expressionReaderRecognizesCommentBlockIndependentlyOfCustomIsCommentLine() {
+        Function<String, Boolean> hashComments = line -> line.trim().startsWith("#");
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
+            hashComments
+        ).readExpression();
+        Assertions.assertEquals("1+2", result);
+    }
+
+    @Test
+    void expressionReaderThrowsOnUnterminatedCommentBlock() {
+        ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("//<< foo\nbar"));
+        Assertions.assertFalse(ex.isPrintStackTrace());
+    }
+
+    @Test
+    void expressionReaderSupportsNestedCommentBlocks() {
+        String text = String.join(
+            "\n",
+            "//<< main comment",
+            "    //<< nested comment",
+            "    >>",
+            "    //<< another nested comment",
+            "    >>",
+            ">>",
+            "1+1"
+        );
+        Assertions.assertEquals("1+1", readOneExpression(text));
+    }
+
+    @Test
+    void expressionReaderThrowsOnUnterminatedNestedCommentBlock() {
+        String text = String.join(
+            "\n",
+            "//<< main comment",
+            "    //<< nested comment, never closed",
+            "1+1"
+        );
+        ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression(text));
+        Assertions.assertFalse(ex.isPrintStackTrace());
+    }
+
+    @Test
+    void expressionReaderDoesNotTreatOpenerAsBlockWhenItIsAContinuationLine() {
+        Assertions.assertEquals("abc<< def", readOneExpression("abc\\\n<< def"));
+    }
+
+    @Test
+    void expressionReaderSkipsLeadingSingleLineCommentsBeforeDetectingABlockOpener() {
+        Function<String, Boolean> slashComments = line -> line.trim().startsWith("//");
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("// leading comment\n<<foo\n>>"),
+            slashComments
+        ).readExpression();
+        Assertions.assertEquals("foo", result);
+    }
+
+    @Test
+    void expressionReaderUsesConfiguredCustomBlockMarkersInsteadOfDefaults() {
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("#{foo\nbar\n}#"),
+            null,
+            "#{",
+            "//#{",
+            "}#"
+        ).readExpression();
+        Assertions.assertEquals("foobar", result);
+    }
+
+    @Test
+    void expressionReaderDoesNotTreatDefaultMarkersSpeciallyWhenCustomMarkersConfigured() {
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("<< foo\n>>"),
+            null,
+            "#{",
+            "//#{",
+            "}#"
+        ).readExpression();
+        Assertions.assertEquals("<< foo", result);
     }
 
     private String readOneExpression(String text) {

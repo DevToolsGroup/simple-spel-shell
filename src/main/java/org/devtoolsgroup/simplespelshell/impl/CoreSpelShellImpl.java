@@ -85,6 +85,9 @@ public class CoreSpelShellImpl implements CoreSpelShell {
                 }
             });
             replConfig.setStopOnException(ShellExitException.class);
+            replConfig.setExprBlockOpenMarker(ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER);
+            replConfig.setCommentBlockOpenMarker(ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER);
+            replConfig.setBlockCloseMarker(ShellUtils.DEFAULT_BLOCK_CLOSE_MARKER);
 
             replConfigForScript = new ReplConfig();
             replConfigForScript.setExprHistoryFile(null);
@@ -94,6 +97,9 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             replConfigForScript.setExprBeforeEvalInterceptor(null);
             replConfigForScript.setEvalResultInterceptor(null);
             replConfigForScript.setStopOnException(Exception.class);
+            replConfigForScript.setExprBlockOpenMarker(replConfig.getExprBlockOpenMarker());
+            replConfigForScript.setCommentBlockOpenMarker(replConfig.getCommentBlockOpenMarker());
+            replConfigForScript.setBlockCloseMarker(replConfig.getBlockCloseMarker());
         } else {
             if (this.console == null) {
                 this.console = parentShell.getConsole();
@@ -109,6 +115,9 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             replConfig.setExprBeforeEvalInterceptor(parentReplConfig.getExprBeforeEvalInterceptor());
             replConfig.setEvalResultInterceptor(parentReplConfig.getEvalResultInterceptor());
             replConfig.setStopOnException(parentReplConfig.getStopOnException());
+            replConfig.setExprBlockOpenMarker(parentReplConfig.getExprBlockOpenMarker());
+            replConfig.setCommentBlockOpenMarker(parentReplConfig.getCommentBlockOpenMarker());
+            replConfig.setBlockCloseMarker(parentReplConfig.getBlockCloseMarker());
 
             ReplConfig parentReplConfigForScript = parentShell.getReplConfigForScript();
             replConfigForScript = new ReplConfig();
@@ -119,6 +128,9 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             replConfigForScript.setExprBeforeEvalInterceptor(parentReplConfigForScript.getExprBeforeEvalInterceptor());
             replConfigForScript.setEvalResultInterceptor(parentReplConfigForScript.getEvalResultInterceptor());
             replConfigForScript.setStopOnException(parentReplConfigForScript.getStopOnException());
+            replConfigForScript.setExprBlockOpenMarker(parentReplConfigForScript.getExprBlockOpenMarker());
+            replConfigForScript.setCommentBlockOpenMarker(parentReplConfigForScript.getCommentBlockOpenMarker());
+            replConfigForScript.setBlockCloseMarker(parentReplConfigForScript.getBlockCloseMarker());
         }
     }
 
@@ -133,7 +145,10 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runRepl(Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             console::read,
-            line -> replConfig.getIsCommentLine().apply(getRootObject(), line)
+            line -> replConfig.getIsCommentLine().apply(getRootObject(), line),
+            replConfig.getExprBlockOpenMarker(),
+            replConfig.getCommentBlockOpenMarker(),
+            replConfig.getBlockCloseMarker()
         );
         return runWithArgs(args, () -> runRepl(replConfig, expressionReader));
     }
@@ -149,7 +164,10 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runScript(String script, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             ShellUtils.lineReader(script),
-            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
+            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line),
+            replConfigForScript.getExprBlockOpenMarker(),
+            replConfigForScript.getCommentBlockOpenMarker(),
+            replConfigForScript.getBlockCloseMarker()
         );
         return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
     }
@@ -165,7 +183,10 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runScript(LineReader scriptLineReader, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             scriptLineReader,
-            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
+            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line),
+            replConfigForScript.getExprBlockOpenMarker(),
+            replConfigForScript.getCommentBlockOpenMarker(),
+            replConfigForScript.getBlockCloseMarker()
         );
         return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
     }

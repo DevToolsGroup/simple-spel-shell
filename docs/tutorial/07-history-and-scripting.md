@@ -126,5 +126,29 @@ becoming `addTask('Draft the Q3 planning doc, circulate it for review, and sched
 drop it and the two halves join with no separator at all, producing `review,and` instead.
 `readExpr` keeps consuming lines as long as each one ends in `\`, so a chain can span more than two lines the same way.
 
+## An alternative: multiline blocks
+
+The trailing-`\` approach above needs every line to end in `\`, and a trailing space before it is easy to forget.
+A second mechanism covers the same need without a per-line marker — `<<` is essentially a stand-in for a whole
+chain of trailing-`\` continuations, and behaves exactly like one: lines are concatenated with nothing inserted,
+so the same trailing-space gotcha still applies:
+
+```
+<< addTask('Draft the Q3 planning doc, circulate it for review,
+ and schedule the kickoff meeting')
+>>
+```
+
+(note the leading space before `and` on the second line — drop it and the two halves join with no separator
+at all, producing `review,and` instead, the same mistake trailing-`\` continuation is prone to.)
+
+Unlike trailing-`\`, no whitespace is required right after `<<` at all — content can start immediately
+(`<<addTask(...)`) with nothing stripped or added.
+
+The same `//<<` ... `>>` shape works as a multiline comment, and can itself contain further nested
+`//<<` ... `>>` comment blocks.
+See [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md) for the full syntax,
+including comment-block nesting and how to configure the markers.
+
 ---
 Previous: [6. Controlling Help and Shorthand Visibility with @Order](06-order-and-help-visibility.md) · Next: [8. Sub-shells and Menu-Driven CLIs](08-submenus.md)

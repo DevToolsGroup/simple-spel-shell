@@ -38,6 +38,9 @@ public class ReplConfig {
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
     private BiConsumer<Object, Object> evalResultInterceptor;
     private Class<? extends Exception> stopOnException;
+    private String exprBlockOpenMarker;
+    private String commentBlockOpenMarker;
+    private String blockCloseMarker;
 
     public Function<Object, String> getPrompt() {
         return prompt;
@@ -93,5 +96,29 @@ public class ReplConfig {
 
     public void setStopOnException(Class<? extends Exception> stopOnException) {
         this.stopOnException = stopOnException;
+    }
+
+    public String getExprBlockOpenMarker() {
+        return exprBlockOpenMarker;
+    }
+
+    public void setExprBlockOpenMarker(String exprBlockOpenMarker) {
+        this.exprBlockOpenMarker = exprBlockOpenMarker;
+    }
+
+    public String getCommentBlockOpenMarker() {
+        return commentBlockOpenMarker;
+    }
+
+    public void setCommentBlockOpenMarker(String commentBlockOpenMarker) {
+        this.commentBlockOpenMarker = commentBlockOpenMarker;
+    }
+
+    public String getBlockCloseMarker() {
+        return blockCloseMarker;
+    }
+
+    public void setBlockCloseMarker(String blockCloseMarker) {
+        this.blockCloseMarker = blockCloseMarker;
     }
 }
