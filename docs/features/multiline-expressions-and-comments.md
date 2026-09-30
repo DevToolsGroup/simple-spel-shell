@@ -4,7 +4,7 @@
 
 Two mechanisms already let one line "continue" onto the next.
 A trailing `\` joins the current line with the next one, with no separator inserted.
-A `//`-prefixed line (by default; configurable via `ReplConfig.setIsCommentLine(...)`) is a single-line comment.
+A `//`-prefixed line (by default; configurable via `ReplConfig.setCommentLineMarker(...)`) is a single-line comment.
 Both apply per physical line, which makes them awkward for a genuinely long expression or a comment spanning many
 lines — every line needs its own trailing `\` or leading `//`.
 
@@ -87,19 +87,26 @@ like a nested `<<`/`>>` pair.
 
 ### Configuring the markers
 
-`<<`, `//<<`, and `>>` are defaults, not fixed syntax — each is a plain `String` field on `ReplConfig`:
+`<<`, `>>`, `//<<`, and `>>` are defaults, not fixed syntax — each is a plain `String` field on `ReplConfig`,
+alongside the single-line `commentLineMarker`:
 
 ```java
 getReplConfig().setExprBlockOpenMarker("#{");
-getReplConfig().setCommentBlockOpenMarker("//#{");
-getReplConfig().setBlockCloseMarker("}#");
+getReplConfig().setExprBlockCloseMarker("}#");
+getReplConfig().setCommentBlockOpenMarker("/*");
+getReplConfig().setCommentBlockCloseMarker("*/");
 ```
+
+Expression blocks and comment blocks each have their own close marker
+(`exprBlockCloseMarker` and `commentBlockCloseMarker`), so the two block kinds can be closed differently,
+as above.
+Both default to `">>"`.
 
 As with every `ReplConfig` field, `getReplConfig()` (interactive) and `getReplConfigForScript()` (batch)
 are configured independently — set both if scripts should also use the custom markers.
 Setting `exprBlockOpenMarker` or `commentBlockOpenMarker` to `null` disables that block kind entirely
 (a line starting with the disabled marker is then read as ordinary content, exactly as if this feature
-didn't exist), the same way `null` already disables `isCommentLine`.
+didn't exist), the same way `null` disables single-line comments via `commentLineMarker`.
 
 ### Known limitations
 
@@ -111,14 +118,16 @@ didn't exist), the same way `null` already disables `isCommentLine`.
   and no `//`-comment stripping happens on lines inside the block.
   A line that looks like `// not a comment` inside an expression block is literal expression text,
   not a stripped comment.
-- A comment block is recognized by its literal open-marker prefix, independent of whatever `isCommentLine`
-  predicate a shell has configured via `ReplConfig.setIsCommentLine(...)`.
-  Even a shell that has replaced `//` entirely with, say, `#` as its single-line comment marker still
-  recognizes a literal `//<<...>>` block (assuming default markers) — because `isCommentLine` is a per-line
-  boolean predicate and cannot express "keep reading until a closing marker shows up several lines later."
-  This mirrors how trailing-`\` continuation is itself unconditional and not pluggable.
+- A comment block is recognized by its own open marker, independent of the single-line `commentLineMarker`
+  a shell has configured via `ReplConfig.setCommentLineMarker(...)`.
+  Even a shell that has replaced `//` with, say, `#` as its single-line comment marker still
+  recognizes a literal `//<<...>>` block (assuming default block markers).
+  Block openers are checked before single-line comments, so with the defaults a `//<<` line opens a comment
+  block even though it also starts with `//`.
 - Reaching the end of input before a closing marker line is found (for either block kind) raises a
   `ShellException` reporting the unterminated block, rather than silently returning partial content.
+  The exception is created with `printStackTrace = true`, so the REPL loop prints its stack trace
+  along with the message (see [Exceptions](../reference/exceptions.md)).
 - A block opener is only recognized as the very first line contributing to a fresh expression.
   If the open marker shows up as the continuation line of an already-in-progress trailing-`\` expression,
   it is treated as ordinary literal text of that continuation, not as a block opener.
@@ -138,7 +147,9 @@ An expression block reads and joins lines verbatim (with no separator inserted, 
 marker line, then returns immediately — no further trailing-`\` processing is checked afterward, the same
 way a plain, non-backslash-terminated line already ends `readExpr` today.
 
-The three markers travel alongside `isCommentLine` as three new `ReplConfig` fields —
-`exprBlockOpenMarker`, `commentBlockOpenMarker`, `blockCloseMarker` — defaulting to `"<<"`, `"//<<"`,
-and `">>"` respectively, and are threaded through `ShellUtils.expressionReader(...)` into `readExpr`
-exactly like `isCommentLine` already is.
+The four block markers travel alongside the single-line `commentLineMarker` as `String` fields on `ReplConfig` —
+`exprBlockOpenMarker`, `exprBlockCloseMarker`, `commentBlockOpenMarker`, `commentBlockCloseMarker` —
+defaulting to `"<<"`, `">>"`, `"//<<"`, and `">>"` respectively
+(the `ShellUtils.DEFAULT_*_MARKER` constants),
+and are threaded through `ShellUtils.expressionReader(...)` into `readExpr`
+exactly like `commentLineMarker` is.

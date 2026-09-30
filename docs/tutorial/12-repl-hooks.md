@@ -2,10 +2,10 @@
 
 Several earlier pages already used one `ReplConfig` hook or another without naming the mechanism:
 dynamic submenu prompt in page 8, the history file in page 7.
-This page names all five, in the order `CoreSpelShellImpl.runRepl()` actually calls them,
+This page names all four, in the order `CoreSpelShellImpl.runRepl()` actually calls them,
 and shows how to layer behavior onto the default without breaking it.
 
-## The five hooks, in firing order
+## The four hooks, in firing order
 
 Each `ReplConfig` holds these fields (there are two `ReplConfig`s per shell
 — one for `runRepl()`, one for `runScript(...)`
@@ -14,7 +14,6 @@ Each `ReplConfig` holds these fields (there are two `ReplConfig`s per shell
 | Hook | Type | Called with | When |
 |---|---|---|---|
 | `prompt` | `Function<Object, String>` | the root object | before reading a line, to render the prompt (skipped entirely if `null`, as it is for scripts) |
-| `isCommentLine` | `BiFunction<Object, String, Boolean>` | root object, raw line | while reading — matching lines are skipped |
 | `expressionInterceptor` | `BiFunction<Object, String, String>` | root object, raw expression | after a full expression is read; returns the (possibly rewritten) expression to evaluate |
 | `exprBeforeEvalInterceptor` | `BiConsumer<Object, String>` | root object, final expression | right before evaluation — a side-effect-only hook, `null` by default |
 | `evalResultInterceptor` | `BiConsumer<Object, Object>` | root object, the result | right after evaluation, with whatever `evaluate(...)` returned |
@@ -66,22 +65,25 @@ tasks(2)>
 
 Since `prompt` is re-evaluated every iteration of the loop, the count updates on its own — no manual refresh needed.
 
-## Recognizing a second comment style
+## Changing the comment marker
 
-`isCommentLine` is a plain predicate — safe to replace outright, since it isn't doing anything besides the one check:
+Besides the hooks, `ReplConfig` also holds plain `String` markers that shape how lines are read.
+`commentLineMarker` (default `"//"`) is the prefix of a single-line comment:
 
 ```java
-getReplConfig().setIsCommentLine((_, line) -> {
-    String trimmed = line.trim();
-    return trimmed.startsWith("//") || trimmed.startsWith("#");
-});
+getReplConfigForScript().setCommentLineMarker("#");
 ```
 
-Now both `// like this` and `# like this` are treated as comments in scripts (page 7) and skipped while reading.
+Now `# like this` is treated as a comment in scripts (page 7) and skipped while reading,
+while `// like this` no longer is.
+A line is a comment when, after stripping its leading whitespace, it starts with the marker;
+setting the marker to `null` turns single-line comments off entirely.
+The multiline block markers (`<<`/`>>` and `//<<`/`>>`) are configured the same way
+— see [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md).
 
 ## The expression interceptor
 
-`isCommentLine` was safe to overwrite because it does one small thing.
+`commentLineMarker` was safe to overwrite because it does one small thing.
 `expressionInterceptor` is different: it's what makes shorthand syntax and history logging work at all,
 so replacing it outright would silently turn both off.
 The pattern to reach for

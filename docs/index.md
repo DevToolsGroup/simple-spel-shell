@@ -54,7 +54,7 @@ with links back to the tutorial page that teaches each concept in context.
 - [Shell Classes](reference/shell-classes.md)
 — `CoreSpelShellImpl` / `BaseSpelShellImpl` / `FileSystemAwareSpelShellImpl`.
 - [Built-in Commands](reference/built-in-commands.md) — every command your shell gets without writing a line of code.
-- [ReplConfig](reference/repl-config.md) — all five REPL hooks in one table.
+- [ReplConfig](reference/repl-config.md) — all four REPL hooks, plus comment and block markers, in one table.
 - [ShellUtils](reference/shell-utils.md) — the shorthand rewrite rules, fuzzy matching, and other static helpers.
 - [Exceptions](reference/exceptions.md) — `ShellException` and `ShellExitException`.
 

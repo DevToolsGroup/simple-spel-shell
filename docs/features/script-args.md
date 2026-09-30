@@ -170,7 +170,11 @@ public Object runScript(String script) {
 public Object runScript(String script, Object args) {
     ExpressionReader expressionReader = ShellUtils.expressionReader(
         ShellUtils.lineReader(script),
-        line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
+        replConfigForScript.getExprBlockOpenMarker(),
+        replConfigForScript.getExprBlockCloseMarker(),
+        replConfigForScript.getCommentLineMarker(),
+        replConfigForScript.getCommentBlockOpenMarker(),
+        replConfigForScript.getCommentBlockCloseMarker()
     );
     return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
 }

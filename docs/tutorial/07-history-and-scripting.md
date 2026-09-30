@@ -67,7 +67,7 @@ addTask 'Buy milk'
 addTask 'Walk the dog'
 ```
 
-`//`-prefixed lines are comments by default (`ReplConfig.getIsCommentLine()`),
+`//`-prefixed lines are comments by default (`ReplConfig.getCommentLineMarker()`),
 and — as shown here — shorthand syntax works inside scripts exactly as it does interactively,
 since it's the same `expressionInterceptor` doing the rewriting either way.
 
