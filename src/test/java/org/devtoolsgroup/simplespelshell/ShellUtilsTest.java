@@ -114,9 +114,9 @@ class ShellUtilsTest {
     void expressionReaderRecognizesCommentBlockIndependentlyOfCustomCommentLineMarker() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
-            "#",
             ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
+            "#",
             ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
             ShellUtils.DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         ).readExpression();
@@ -165,9 +165,9 @@ class ShellUtilsTest {
     void expressionReaderSkipsLeadingSingleLineCommentsBeforeDetectingABlockOpener() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("// leading comment\n<<foo\n>>"),
-            "//",
             ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
+            "//",
             ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
             ShellUtils.DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         ).readExpression();
@@ -178,9 +178,9 @@ class ShellUtilsTest {
     void expressionReaderUsesConfiguredCustomBlockMarkersInsteadOfDefaults() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("#{foo\nbar\n}#"),
-            null,
             "#{",
             "}#",
+            null,
             "//#{",
             "}#"
         ).readExpression();
@@ -191,9 +191,9 @@ class ShellUtilsTest {
     void expressionReaderDoesNotTreatDefaultMarkersSpeciallyWhenCustomMarkersConfigured() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("<< foo\n>>"),
-            null,
             "#{",
             "}#",
+            null,
             "//#{",
             "}#"
         ).readExpression();

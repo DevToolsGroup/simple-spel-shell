@@ -61,9 +61,9 @@ public class ShellUtils {
         "^\\s*(%s)\\s*=\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT, IDENTIFIER_PAT)
     );
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)\\\\\\s*$");
-    public static final String DEFAULT_COMMENT_LINE_MARKER = "//";
     public static final String DEFAULT_EXPR_BLOCK_OPEN_MARKER = "<<";
     public static final String DEFAULT_EXPR_BLOCK_CLOSE_MARKER = ">>";
+    public static final String DEFAULT_COMMENT_LINE_MARKER = "//";
     public static final String DEFAULT_COMMENT_BLOCK_OPEN_MARKER = "//<<";
     public static final String DEFAULT_COMMENT_BLOCK_CLOSE_MARKER = ">>";
     private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
@@ -100,17 +100,17 @@ public class ShellUtils {
 
     public static ExpressionReader expressionReader(
         LineReader lineReader,
-        String commentLineMarker,
         String exprBlockOpenMarker,
         String exprBlockCloseMarker,
+        String commentLineMarker,
         String commentBlockOpenMarker,
         String commentBlockCloseMarker
     ) {
         return () -> readExpr(
             lineReader,
-            commentLineMarker,
             exprBlockOpenMarker,
             exprBlockCloseMarker,
+            commentLineMarker,
             commentBlockOpenMarker,
             commentBlockCloseMarker
         );
@@ -119,9 +119,9 @@ public class ShellUtils {
     public static ExpressionReader expressionReader(LineReader lineReader) {
         return expressionReader(
             lineReader,
-            DEFAULT_COMMENT_LINE_MARKER,
             DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
+            DEFAULT_COMMENT_LINE_MARKER,
             DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
             DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         );
@@ -280,9 +280,9 @@ public class ShellUtils {
 
     private static String readExpr(
         LineReader lineReader,
-        String commentLineMarker,
         String exprBlockOpenMarker,
         String exprBlockCloseMarker,
+        String commentLineMarker,
         String commentBlockOpenMarker,
         String commentBlockCloseMarker
     ) {

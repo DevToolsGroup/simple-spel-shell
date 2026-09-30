@@ -33,9 +33,9 @@ public class ReplConfig {
 
     private File exprHistoryFile;
     private Function<Object, String> prompt;
-    private String commentLineMarker;
     private String exprBlockOpenMarker;
     private String exprBlockCloseMarker;
+    private String commentLineMarker;
     private String commentBlockOpenMarker;
     private String commentBlockCloseMarker;
     private BiFunction<Object, String, String> expressionInterceptor;
@@ -57,14 +57,6 @@ public class ReplConfig {
 
     public void setExpressionInterceptor(BiFunction<Object, String, String> expressionInterceptor) {
         this.expressionInterceptor = expressionInterceptor;
-    }
-
-    public String getCommentLineMarker() {
-        return commentLineMarker;
-    }
-
-    public void setCommentLineMarker(String commentLineMarker) {
-        this.commentLineMarker = commentLineMarker;
     }
 
     public BiConsumer<Object, String> getExprBeforeEvalInterceptor() {
@@ -113,6 +105,14 @@ public class ReplConfig {
 
     public void setExprBlockCloseMarker(String exprBlockCloseMarker) {
         this.exprBlockCloseMarker = exprBlockCloseMarker;
+    }
+
+    public String getCommentLineMarker() {
+        return commentLineMarker;
+    }
+
+    public void setCommentLineMarker(String commentLineMarker) {
+        this.commentLineMarker = commentLineMarker;
     }
 
     public String getCommentBlockOpenMarker() {
