@@ -107,18 +107,14 @@ public class ShellUtils {
         return () -> readExpr(lineReader, commentLineMarker, exprBlockOpenMarker, commentBlockOpenMarker, blockCloseMarker);
     }
 
-    public static ExpressionReader expressionReader(LineReader lineReader, String commentLineMarker) {
+    public static ExpressionReader expressionReader(LineReader lineReader) {
         return expressionReader(
             lineReader,
-            commentLineMarker,
+            DEFAULT_COMMENT_LINE_MARKER,
             DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
             DEFAULT_BLOCK_CLOSE_MARKER
         );
-    }
-
-    public static ExpressionReader expressionReader(LineReader lineReader) {
-        return expressionReader(lineReader, null);
     }
 
     public static boolean isCommentLine(String line, String commentLineMarker) {

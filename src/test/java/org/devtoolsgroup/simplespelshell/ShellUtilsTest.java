@@ -114,7 +114,10 @@ class ShellUtilsTest {
     void expressionReaderRecognizesCommentBlockIndependentlyOfCustomCommentLineMarker() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
-            "#"
+            "#",
+            ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_BLOCK_CLOSE_MARKER
         ).readExpression();
         Assertions.assertEquals("1+2", result);
     }
@@ -161,7 +164,10 @@ class ShellUtilsTest {
     void expressionReaderSkipsLeadingSingleLineCommentsBeforeDetectingABlockOpener() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("// leading comment\n<<foo\n>>"),
-            "//"
+            "//",
+            ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_BLOCK_CLOSE_MARKER
         ).readExpression();
         Assertions.assertEquals("foo", result);
     }
@@ -191,7 +197,7 @@ class ShellUtilsTest {
     }
 
     private String readOneExpression(String text) {
-        return ShellUtils.expressionReader(ShellUtils.lineReader(text), null).readExpression();
+        return ShellUtils.expressionReader(ShellUtils.lineReader(text)).readExpression();
     }
 
     private void testSplit(String name, String... expectedSplit) {

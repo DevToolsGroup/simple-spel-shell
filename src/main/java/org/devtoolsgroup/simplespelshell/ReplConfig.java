@@ -32,15 +32,15 @@ import java.util.function.Function;
 public class ReplConfig {
 
     private File exprHistoryFile;
-    private String commentLineMarker;
     private Function<Object, String> prompt;
+    private String commentLineMarker;
+    private String exprBlockOpenMarker;
+    private String commentBlockOpenMarker;
+    private String blockCloseMarker;
     private BiFunction<Object, String, String> expressionInterceptor;
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
     private BiConsumer<Object, Object> evalResultInterceptor;
     private Class<? extends Exception> stopOnException;
-    private String exprBlockOpenMarker;
-    private String commentBlockOpenMarker;
-    private String blockCloseMarker;
 
     public Function<Object, String> getPrompt() {
         return prompt;
