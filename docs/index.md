@@ -68,5 +68,5 @@ than the tutorial or reference pages do.
 - [Script Arguments](features/script-args.md) — passing an `Object args` value into `runScript(...)`/`runRepl()`,
 read back inside as `#_` — mentioned in passing on [tutorial page 7](tutorial/07-history-and-scripting.md).
 - [Multiline Expressions and Comments](features/multiline-expressions-and-comments.md)
-— `<<`/`>>` and `//<<`/`>>` blocks as a configurable alternative to trailing-`\` continuation and `//` comment
+— `<<`/`>>` and `/*`/`*/` blocks as a configurable alternative to trailing-`\` continuation and `//` comment
 lines — mentioned on [tutorial page 7](tutorial/07-history-and-scripting.md).

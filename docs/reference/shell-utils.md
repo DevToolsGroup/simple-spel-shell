@@ -57,7 +57,7 @@ See [tutorial page 8](../tutorial/08-submenus.md).
 `lineReader(String|File|InputStream|...)` builds a `LineReader` from various sources;
 `expressionReader(...)` builds the `ExpressionReader` `runRepl()` and every `runScript(...)` read from,
 handling comment-line skipping, trailing-`\` continuation,
-and `<<`/`>>`/`//<<`/`>>` multiline blocks (`readExpr`, private):
+and `<<`/`>>` and `/*`/`*/` multiline blocks (`readExpr`, private):
 
 ```java
 ExpressionReader expressionReader(
@@ -74,8 +74,8 @@ The shell passes the corresponding `ReplConfig` fields ([ReplConfig reference](r
 A `null` open marker or comment-line marker disables that construct.
 The single-argument overload `expressionReader(LineReader)` uses the defaults
 `DEFAULT_EXPR_BLOCK_OPEN_MARKER` (`"<<"`), `DEFAULT_EXPR_BLOCK_CLOSE_MARKER` (`">>"`),
-`DEFAULT_COMMENT_LINE_MARKER` (`"//"`), `DEFAULT_COMMENT_BLOCK_OPEN_MARKER` (`"//<<"`),
-and `DEFAULT_COMMENT_BLOCK_CLOSE_MARKER` (`">>"`).
+`DEFAULT_COMMENT_LINE_MARKER` (`"//"`), `DEFAULT_COMMENT_BLOCK_OPEN_MARKER` (`"/*"`),
+and `DEFAULT_COMMENT_BLOCK_CLOSE_MARKER` (`"*/"`).
 See [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md) for the block syntax.
 
 `isCommentLine(String line, String commentLineMarker)` is the single-line comment check `readExpr` uses:

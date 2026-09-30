@@ -144,10 +144,10 @@ at all, producing `review,and` instead)
 No whitespace is required right after `<<` at all — content can start immediately
 (`<<addTask(...)`) with nothing stripped or added.
 
-The same `//<<` ... `>>` shape works as a multiline comment, and can itself contain further nested
-`//<<` ... `>>` comment blocks.
+A similar `/*` ... `*/` block works as a multiline comment, and can itself contain further nested comment blocks.
+Both `//` lines and `/*` ... `*/` blocks can also be used inside an expression block to comment out some of its lines.
 See [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md) for the full syntax,
-including comment-block nesting and how to configure the markers.
+including comment-block nesting, comments inside expression blocks, and how to configure the markers.
 
 ---
 Previous: [6. Controlling Help and Shorthand Visibility with @Order](06-order-and-help-visibility.md) · Next: [8. Sub-shells and Menu-Driven CLIs](08-submenus.md)

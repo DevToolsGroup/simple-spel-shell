@@ -78,7 +78,7 @@ Now `# like this` is treated as a comment in scripts (page 7) and skipped while 
 while `// like this` no longer is.
 A line is a comment when, after stripping its leading whitespace, it starts with the marker;
 setting the marker to `null` turns single-line comments off entirely.
-The multiline block markers (`<<`/`>>` and `//<<`/`>>`) are configured the same way
+The multiline block markers (`<<`/`>>` and `/*`/`*/`) are configured the same way
 — see [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md).
 
 ## The expression interceptor
