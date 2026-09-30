@@ -2,14 +2,16 @@
 
 ## 1. General description
 
-Two mechanisms already let one line "continue" onto the next.
-A trailing `\` joins the current line with the next one, with no separator inserted.
-A `//`-prefixed line (by default; configurable via `ReplConfig.setCommentLineMarker(...)`) is a single-line comment.
-Both apply per physical line, which makes them awkward for a genuinely long expression or a comment spanning many
-lines — every line needs its own trailing `\` or leading `//`.
+An expression can span several lines, and so can a comment.
+The simplest way is per line:
+a trailing `\` joins the current line with the next one, with no separator inserted,
+and a `//`-prefixed line (by default; configurable via `ReplConfig.setCommentLineMarker(...)`) is a single-line comment.
+For a genuinely long expression or a comment spanning many lines this gets awkward,
+since every line needs its own trailing `\` or leading `//`.
 
-This feature adds a second, block-based way to write both, usable anywhere the existing mechanisms are
-— interactively and in every `runScript(...)` variant — without replacing either of them:
+Multiline blocks are a second, block-based way to write both.
+They work everywhere the per-line mechanisms do
+— interactively and in every `runScript(...)` variant — and can be mixed freely with them:
 
 ```
 << multiline
@@ -105,8 +107,8 @@ Both default to `">>"`.
 As with every `ReplConfig` field, `getReplConfig()` (interactive) and `getReplConfigForScript()` (batch)
 are configured independently — set both if scripts should also use the custom markers.
 Setting `exprBlockOpenMarker` or `commentBlockOpenMarker` to `null` disables that block kind entirely
-(a line starting with the disabled marker is then read as ordinary content, exactly as if this feature
-didn't exist), the same way `null` disables single-line comments via `commentLineMarker`.
+(a line starting with the disabled marker is then read as ordinary content, exactly as if block syntax
+weren't supported), the same way `null` disables single-line comments via `commentLineMarker`.
 
 ### Known limitations
 
@@ -136,8 +138,8 @@ didn't exist), the same way `null` disables single-line comments via `commentLin
 
 Both block forms are detected and handled entirely inside the private `readExpr` method in
 [`ShellUtils`](../reference/shell-utils.md) — the single choke point every expression source
-(the interactive REPL and every `runScript(...)` overload) already reads through, the same way
-trailing-`\` continuation is already implemented as a fixed part of that method.
+(the interactive REPL and every `runScript(...)` overload) reads through, the same way
+trailing-`\` continuation is implemented as a fixed part of that method.
 
 `readExpr` checks for a comment-block or expression-block opener only while its own line accumulator
 is still empty — i.e., only before any trailing-`\` continuation for the current expression has started.
@@ -145,7 +147,7 @@ A comment block is skipped by reading and discarding lines until a closing marke
 depth, tracking depth by also recognizing nested opener lines while skipping (`skipCommentBlock`).
 An expression block reads and joins lines verbatim (with no separator inserted, ever) until the closing
 marker line, then returns immediately — no further trailing-`\` processing is checked afterward, the same
-way a plain, non-backslash-terminated line already ends `readExpr` today.
+way a plain, non-backslash-terminated line ends `readExpr`.
 
 The four block markers travel alongside the single-line `commentLineMarker` as `String` fields on `ReplConfig` —
 `exprBlockOpenMarker`, `exprBlockCloseMarker`, `commentBlockOpenMarker`, `commentBlockCloseMarker` —
