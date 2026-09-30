@@ -361,7 +361,13 @@ public class ShellUtils {
         String commentBlockOpenMarker,
         String commentBlockCloseMarker
     ) {
-        StringBuilder sb = new StringBuilder(openerLine.substring(exprBlockOpenMarker.length()));
+        String openerRemainder = openerLine.substring(exprBlockOpenMarker.length());
+        StringBuilder sb = new StringBuilder();
+        if (commentBlockOpenMarker != null && openerRemainder.stripLeading().startsWith(commentBlockOpenMarker)) {
+            skipCommentBlock(lineReader, commentBlockOpenMarker, commentBlockCloseMarker);
+        } else if (!isCommentLine(openerRemainder, commentLineMarker)) {
+            sb.append(openerRemainder);
+        }
         while (true) {
             String line = lineReader.readLine();
             if (line == null) {

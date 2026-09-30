@@ -84,11 +84,61 @@ class ShellUtilsTest {
     }
 
     @Test
-    void expressionReaderTreatsOpenerLineRemainderAndBackslashesInsideExpressionBlockVerbatim() {
+    void expressionReaderTreatsBackslashesInsideExpressionBlockVerbatim() {
         Assertions.assertEquals(
-            " // not a comment in herestill \\ literal backslash",
-            readOneExpression("<< // not a comment in here\nstill \\ literal backslash\n>>")
+            " foo \\still \\ literal backslash",
+            readOneExpression("<< foo \\\nstill \\ literal backslash\n>>")
         );
+    }
+
+    @Test
+    void expressionReaderSkipsCommentOnExpressionBlockOpenerLine() {
+        Assertions.assertEquals(
+            "expressioncontinuation",
+            readOneExpression("<< // this is a comment\nexpression\ncontinuation\n>>")
+        );
+        Assertions.assertEquals("abc", readOneExpression("<<// no space\nabc\n>>"));
+        // '//' after other content on the opener line is literal content.
+        Assertions.assertEquals("url('http://x')", readOneExpression("<<url('http://x')\n>>"));
+    }
+
+    @Test
+    void expressionReaderStartsCommentBlockOnExpressionBlockOpenerLine() {
+        String text = String.join("\n",
+            "<< //<< comment block",
+            "still comment",
+            "    //<< nested",
+            "    >>",
+            ">>",
+            "expression",
+            "continuation",
+            ">>"
+        );
+        Assertions.assertEquals("expressioncontinuation", readOneExpression(text));
+        Assertions.assertEquals("abc", readOneExpression("<<//<<no space\n>>\nabc\n>>"));
+    }
+
+    @Test
+    void expressionReaderThrowsOnUnterminatedCommentBlockStartedOnExpressionBlockOpenerLine() {
+        ShellException ex = Assertions.assertThrows(
+            ShellException.class, () -> readOneExpression("<< //<< comment\nabc")
+        );
+        Assertions.assertEquals(
+            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+        );
+    }
+
+    @Test
+    void expressionReaderKeepsCommentLikeOpenerLineRemainderWhenCommentLineMarkerDisabled() {
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("<< // foo\nbar\n>>"),
+            ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
+            null,
+            ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
+        ).readExpression();
+        Assertions.assertEquals(" // foobar", result);
     }
 
     @Test
