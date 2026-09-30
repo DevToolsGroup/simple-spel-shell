@@ -35,8 +35,9 @@ public class ReplConfig {
     private Function<Object, String> prompt;
     private String commentLineMarker;
     private String exprBlockOpenMarker;
+    private String exprBlockCloseMarker;
     private String commentBlockOpenMarker;
-    private String blockCloseMarker;
+    private String commentBlockCloseMarker;
     private BiFunction<Object, String, String> expressionInterceptor;
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
     private BiConsumer<Object, Object> evalResultInterceptor;
@@ -106,6 +107,14 @@ public class ReplConfig {
         this.exprBlockOpenMarker = exprBlockOpenMarker;
     }
 
+    public String getExprBlockCloseMarker() {
+        return exprBlockCloseMarker;
+    }
+
+    public void setExprBlockCloseMarker(String exprBlockCloseMarker) {
+        this.exprBlockCloseMarker = exprBlockCloseMarker;
+    }
+
     public String getCommentBlockOpenMarker() {
         return commentBlockOpenMarker;
     }
@@ -114,11 +123,11 @@ public class ReplConfig {
         this.commentBlockOpenMarker = commentBlockOpenMarker;
     }
 
-    public String getBlockCloseMarker() {
-        return blockCloseMarker;
+    public String getCommentBlockCloseMarker() {
+        return commentBlockCloseMarker;
     }
 
-    public void setBlockCloseMarker(String blockCloseMarker) {
-        this.blockCloseMarker = blockCloseMarker;
+    public void setCommentBlockCloseMarker(String commentBlockCloseMarker) {
+        this.commentBlockCloseMarker = commentBlockCloseMarker;
     }
 }

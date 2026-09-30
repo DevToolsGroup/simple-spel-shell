@@ -116,8 +116,9 @@ class ShellUtilsTest {
             ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
             "#",
             ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
             ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
-            ShellUtils.DEFAULT_BLOCK_CLOSE_MARKER
+            ShellUtils.DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         ).readExpression();
         Assertions.assertEquals("1+2", result);
     }
@@ -166,8 +167,9 @@ class ShellUtilsTest {
             ShellUtils.lineReader("// leading comment\n<<foo\n>>"),
             "//",
             ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
             ShellUtils.DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
-            ShellUtils.DEFAULT_BLOCK_CLOSE_MARKER
+            ShellUtils.DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         ).readExpression();
         Assertions.assertEquals("foo", result);
     }
@@ -178,6 +180,7 @@ class ShellUtilsTest {
             ShellUtils.lineReader("#{foo\nbar\n}#"),
             null,
             "#{",
+            "}#",
             "//#{",
             "}#"
         ).readExpression();
@@ -190,6 +193,7 @@ class ShellUtilsTest {
             ShellUtils.lineReader("<< foo\n>>"),
             null,
             "#{",
+            "}#",
             "//#{",
             "}#"
         ).readExpression();

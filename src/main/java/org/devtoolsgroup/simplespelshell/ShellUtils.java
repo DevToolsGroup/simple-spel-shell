@@ -63,8 +63,9 @@ public class ShellUtils {
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)\\\\\\s*$");
     public static final String DEFAULT_COMMENT_LINE_MARKER = "//";
     public static final String DEFAULT_EXPR_BLOCK_OPEN_MARKER = "<<";
+    public static final String DEFAULT_EXPR_BLOCK_CLOSE_MARKER = ">>";
     public static final String DEFAULT_COMMENT_BLOCK_OPEN_MARKER = "//<<";
-    public static final String DEFAULT_BLOCK_CLOSE_MARKER = ">>";
+    public static final String DEFAULT_COMMENT_BLOCK_CLOSE_MARKER = ">>";
     private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
         "(?<=[a-z])(?=[A-Z])" +
             "|(?<=[^_])(?=_)|(?<=_)(?=[^_])" +
@@ -101,10 +102,18 @@ public class ShellUtils {
         LineReader lineReader,
         String commentLineMarker,
         String exprBlockOpenMarker,
+        String exprBlockCloseMarker,
         String commentBlockOpenMarker,
-        String blockCloseMarker
+        String commentBlockCloseMarker
     ) {
-        return () -> readExpr(lineReader, commentLineMarker, exprBlockOpenMarker, commentBlockOpenMarker, blockCloseMarker);
+        return () -> readExpr(
+            lineReader,
+            commentLineMarker,
+            exprBlockOpenMarker,
+            exprBlockCloseMarker,
+            commentBlockOpenMarker,
+            commentBlockCloseMarker
+        );
     }
 
     public static ExpressionReader expressionReader(LineReader lineReader) {
@@ -112,8 +121,9 @@ public class ShellUtils {
             lineReader,
             DEFAULT_COMMENT_LINE_MARKER,
             DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
             DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
-            DEFAULT_BLOCK_CLOSE_MARKER
+            DEFAULT_COMMENT_BLOCK_CLOSE_MARKER
         );
     }
 
@@ -272,8 +282,9 @@ public class ShellUtils {
         LineReader lineReader,
         String commentLineMarker,
         String exprBlockOpenMarker,
+        String exprBlockCloseMarker,
         String commentBlockOpenMarker,
-        String blockCloseMarker
+        String commentBlockCloseMarker
     ) {
         StringBuilder sb = new StringBuilder();
         while (true) {
@@ -284,11 +295,11 @@ public class ShellUtils {
             if (sb.isEmpty()) {
                 String withoutLeadingWs = line.stripLeading();
                 if (commentBlockOpenMarker != null && withoutLeadingWs.startsWith(commentBlockOpenMarker)) {
-                    skipCommentBlock(lineReader, commentBlockOpenMarker, blockCloseMarker);
+                    skipCommentBlock(lineReader, commentBlockOpenMarker, commentBlockCloseMarker);
                     continue;
                 }
                 if (exprBlockOpenMarker != null && withoutLeadingWs.startsWith(exprBlockOpenMarker)) {
-                    return readExpressionBlock(lineReader, withoutLeadingWs, exprBlockOpenMarker, blockCloseMarker);
+                    return readExpressionBlock(lineReader, withoutLeadingWs, exprBlockOpenMarker, exprBlockCloseMarker);
                 }
             }
             if (isCommentLine(line, commentLineMarker)) {
@@ -304,21 +315,27 @@ public class ShellUtils {
         }
     }
 
-    private static void skipCommentBlock(LineReader lineReader, String commentBlockOpenMarker, String blockCloseMarker) {
+    private static void skipCommentBlock(
+        LineReader lineReader,
+        String commentBlockOpenMarker,
+        String commentBlockCloseMarker
+    ) {
         int depth = 1;
         while (true) {
             String line = lineReader.readLine();
             if (line == null) {
                 throw new ShellException(
                     false,
-                    "Unterminated comment block: reached end of input before a closing '%s' line.".formatted(blockCloseMarker)
+                    "Unterminated comment block: reached end of input before a closing '%s' line.".formatted(
+                        commentBlockCloseMarker
+                    )
                 );
             }
             if (line.stripLeading().startsWith(commentBlockOpenMarker)) {
                 depth++;
                 continue;
             }
-            if (line.trim().equals(blockCloseMarker)) {
+            if (line.trim().equals(commentBlockCloseMarker)) {
                 depth--;
                 if (depth == 0) {
                     return;
@@ -331,7 +348,7 @@ public class ShellUtils {
         LineReader lineReader,
         String openerLine,
         String exprBlockOpenMarker,
-        String blockCloseMarker
+        String exprBlockCloseMarker
     ) {
         StringBuilder sb = new StringBuilder(openerLine.substring(exprBlockOpenMarker.length()));
         while (true) {
@@ -339,10 +356,12 @@ public class ShellUtils {
             if (line == null) {
                 throw new ShellException(
                     false,
-                    "Unterminated expression block: reached end of input before a closing '%s' line.".formatted(blockCloseMarker)
+                    "Unterminated expression block: reached end of input before a closing '%s' line.".formatted(
+                        exprBlockCloseMarker
+                    )
                 );
             }
-            if (line.trim().equals(blockCloseMarker)) {
+            if (line.trim().equals(exprBlockCloseMarker)) {
                 return sb.toString();
             }
             sb.append(line);
