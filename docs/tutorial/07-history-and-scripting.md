@@ -128,10 +128,9 @@ drop it and the two halves join with no separator at all, producing `review,and`
 
 ## An alternative: multiline blocks
 
-The trailing-`\` approach above needs every line to end in `\`, and a trailing space before it is easy to forget.
+The trailing-`\` approach above needs every line to end in `\`.
 A second mechanism covers the same need without a per-line marker — `<<` is essentially a stand-in for a whole
-chain of trailing-`\` continuations, and behaves exactly like one: lines are concatenated with nothing inserted,
-so the same trailing-space gotcha still applies:
+chain of trailing-`\` continuations, and behaves exactly like one: lines are concatenated with nothing inserted:
 
 ```
 << addTask('Draft the Q3 planning doc, circulate it for review,
@@ -140,9 +139,9 @@ so the same trailing-space gotcha still applies:
 ```
 
 (note the leading space before `and` on the second line — drop it and the two halves join with no separator
-at all, producing `review,and` instead, the same mistake trailing-`\` continuation is prone to.)
+at all, producing `review,and` instead)
 
-Unlike trailing-`\`, no whitespace is required right after `<<` at all — content can start immediately
+No whitespace is required right after `<<` at all — content can start immediately
 (`<<addTask(...)`) with nothing stripped or added.
 
 The same `//<<` ... `>>` shape works as a multiline comment, and can itself contain further nested
