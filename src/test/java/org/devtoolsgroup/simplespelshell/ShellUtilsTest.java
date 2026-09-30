@@ -3,7 +3,6 @@ package org.devtoolsgroup.simplespelshell;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.function.Function;
 
 class ShellUtilsTest {
 
@@ -112,11 +111,10 @@ class ShellUtilsTest {
     }
 
     @Test
-    void expressionReaderRecognizesCommentBlockIndependentlyOfCustomIsCommentLine() {
-        Function<String, Boolean> hashComments = line -> line.trim().startsWith("#");
+    void expressionReaderRecognizesCommentBlockIndependentlyOfCustomCommentLineMarker() {
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
-            hashComments
+            "#"
         ).readExpression();
         Assertions.assertEquals("1+2", result);
     }
@@ -161,10 +159,9 @@ class ShellUtilsTest {
 
     @Test
     void expressionReaderSkipsLeadingSingleLineCommentsBeforeDetectingABlockOpener() {
-        Function<String, Boolean> slashComments = line -> line.trim().startsWith("//");
         String result = ShellUtils.expressionReader(
             ShellUtils.lineReader("// leading comment\n<<foo\n>>"),
-            slashComments
+            "//"
         ).readExpression();
         Assertions.assertEquals("foo", result);
     }

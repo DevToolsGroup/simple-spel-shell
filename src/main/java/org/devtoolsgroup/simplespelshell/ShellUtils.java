@@ -46,7 +46,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -62,6 +61,7 @@ public class ShellUtils {
         "^\\s*(%s)\\s*=\\s*(%s)\\s+(.*)$".formatted(IDENTIFIER_PAT, IDENTIFIER_PAT)
     );
     private static final Pattern TRAILING_SLASHES_PAT = pat("^(.*)\\\\\\s*$");
+    public static final String DEFAULT_COMMENT_LINE_MARKER = "//";
     public static final String DEFAULT_EXPR_BLOCK_OPEN_MARKER = "<<";
     public static final String DEFAULT_COMMENT_BLOCK_OPEN_MARKER = "//<<";
     public static final String DEFAULT_BLOCK_CLOSE_MARKER = ">>";
@@ -99,18 +99,18 @@ public class ShellUtils {
 
     public static ExpressionReader expressionReader(
         LineReader lineReader,
-        Function<String, Boolean> isCommentLine,
+        String commentLineMarker,
         String exprBlockOpenMarker,
         String commentBlockOpenMarker,
         String blockCloseMarker
     ) {
-        return () -> readExpr(lineReader, isCommentLine, exprBlockOpenMarker, commentBlockOpenMarker, blockCloseMarker);
+        return () -> readExpr(lineReader, commentLineMarker, exprBlockOpenMarker, commentBlockOpenMarker, blockCloseMarker);
     }
 
-    public static ExpressionReader expressionReader(LineReader lineReader, Function<String, Boolean> isCommentLine) {
+    public static ExpressionReader expressionReader(LineReader lineReader, String commentLineMarker) {
         return expressionReader(
             lineReader,
-            isCommentLine,
+            commentLineMarker,
             DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             DEFAULT_COMMENT_BLOCK_OPEN_MARKER,
             DEFAULT_BLOCK_CLOSE_MARKER
@@ -119,6 +119,10 @@ public class ShellUtils {
 
     public static ExpressionReader expressionReader(LineReader lineReader) {
         return expressionReader(lineReader, null);
+    }
+
+    public static boolean isCommentLine(String line, String commentLineMarker) {
+        return commentLineMarker != null && line.stripLeading().startsWith(commentLineMarker);
     }
 
     public static String[] splitForMatch(String name) {
@@ -270,7 +274,7 @@ public class ShellUtils {
 
     private static String readExpr(
         LineReader lineReader,
-        Function<String, Boolean> isCommentLine,
+        String commentLineMarker,
         String exprBlockOpenMarker,
         String commentBlockOpenMarker,
         String blockCloseMarker
@@ -291,7 +295,7 @@ public class ShellUtils {
                     return readExpressionBlock(lineReader, withoutLeadingWs, exprBlockOpenMarker, blockCloseMarker);
                 }
             }
-            if (isCommentLine != null && isCommentLine.apply(line)) {
+            if (isCommentLine(line, commentLineMarker)) {
                 continue;
             }
             Matcher matcher = TRAILING_SLASHES_PAT.matcher(line);

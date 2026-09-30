@@ -32,7 +32,7 @@ import java.util.function.Function;
 public class ReplConfig {
 
     private File exprHistoryFile;
-    private BiFunction<Object, String, Boolean> isCommentLine;
+    private String commentLineMarker;
     private Function<Object, String> prompt;
     private BiFunction<Object, String, String> expressionInterceptor;
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
@@ -58,12 +58,12 @@ public class ReplConfig {
         this.expressionInterceptor = expressionInterceptor;
     }
 
-    public BiFunction<Object, String, Boolean> getIsCommentLine() {
-        return isCommentLine;
+    public String getCommentLineMarker() {
+        return commentLineMarker;
     }
 
-    public void setIsCommentLine(BiFunction<Object, String, Boolean> isCommentLine) {
-        this.isCommentLine = isCommentLine;
+    public void setCommentLineMarker(String commentLineMarker) {
+        this.commentLineMarker = commentLineMarker;
     }
 
     public BiConsumer<Object, String> getExprBeforeEvalInterceptor() {

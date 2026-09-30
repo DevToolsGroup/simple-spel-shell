@@ -67,8 +67,7 @@ class SpelShellTest {
 
     private static TestConsole reconfigureShellForTest(BaseSpelShell shell, String script, boolean debug) {
         LineReader scriptLineReader = ShellUtils.lineReader(script);
-        BiFunction<Object, String, Boolean> isCommentLine = shell.getReplConfig().getIsCommentLine();
-        TestConsole console = new TestConsole(scriptLineReader, line -> isCommentLine.apply(null, line));
+        TestConsole console = new TestConsole(scriptLineReader, shell.getReplConfig().getCommentLineMarker());
         console.setDebug(debug);
         shell.setConsole(console);
 

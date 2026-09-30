@@ -75,7 +75,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
 
             replConfig = new ReplConfig();
             replConfig.setExprHistoryFile(null);
-            replConfig.setIsCommentLine((_, str) -> str.trim().startsWith("//"));
+            replConfig.setCommentLineMarker(ShellUtils.DEFAULT_COMMENT_LINE_MARKER);
             replConfig.setPrompt(_ -> "SpEL> ");
             replConfig.setExpressionInterceptor(makeDefaultExpressionInterceptor(false));
             replConfig.setExprBeforeEvalInterceptor(null);
@@ -91,7 +91,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
 
             replConfigForScript = new ReplConfig();
             replConfigForScript.setExprHistoryFile(null);
-            replConfigForScript.setIsCommentLine(replConfig.getIsCommentLine());
+            replConfigForScript.setCommentLineMarker(replConfig.getCommentLineMarker());
             replConfigForScript.setPrompt(null);
             replConfigForScript.setExpressionInterceptor(makeDefaultExpressionInterceptor(true));
             replConfigForScript.setExprBeforeEvalInterceptor(null);
@@ -109,7 +109,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             ReplConfig parentReplConfig = parentShell.getReplConfig();
             replConfig = new ReplConfig();
             replConfig.setExprHistoryFile(parentReplConfig.getExprHistoryFile());
-            replConfig.setIsCommentLine(parentReplConfig.getIsCommentLine());
+            replConfig.setCommentLineMarker(parentReplConfig.getCommentLineMarker());
             replConfig.setPrompt(parentReplConfig.getPrompt());
             replConfig.setExpressionInterceptor(parentReplConfig.getExpressionInterceptor());
             replConfig.setExprBeforeEvalInterceptor(parentReplConfig.getExprBeforeEvalInterceptor());
@@ -122,7 +122,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
             ReplConfig parentReplConfigForScript = parentShell.getReplConfigForScript();
             replConfigForScript = new ReplConfig();
             replConfigForScript.setExprHistoryFile(parentReplConfigForScript.getExprHistoryFile());
-            replConfigForScript.setIsCommentLine(parentReplConfigForScript.getIsCommentLine());
+            replConfigForScript.setCommentLineMarker(parentReplConfigForScript.getCommentLineMarker());
             replConfigForScript.setPrompt(parentReplConfigForScript.getPrompt());
             replConfigForScript.setExpressionInterceptor(parentReplConfigForScript.getExpressionInterceptor());
             replConfigForScript.setExprBeforeEvalInterceptor(parentReplConfigForScript.getExprBeforeEvalInterceptor());
@@ -145,7 +145,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runRepl(Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             console::read,
-            line -> replConfig.getIsCommentLine().apply(getRootObject(), line),
+            replConfig.getCommentLineMarker(),
             replConfig.getExprBlockOpenMarker(),
             replConfig.getCommentBlockOpenMarker(),
             replConfig.getBlockCloseMarker()
@@ -164,7 +164,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runScript(String script, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             ShellUtils.lineReader(script),
-            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line),
+            replConfigForScript.getCommentLineMarker(),
             replConfigForScript.getExprBlockOpenMarker(),
             replConfigForScript.getCommentBlockOpenMarker(),
             replConfigForScript.getBlockCloseMarker()
@@ -183,7 +183,7 @@ public class CoreSpelShellImpl implements CoreSpelShell {
     public Object runScript(LineReader scriptLineReader, Object args) {
         ExpressionReader expressionReader = ShellUtils.expressionReader(
             scriptLineReader,
-            line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line),
+            replConfigForScript.getCommentLineMarker(),
             replConfigForScript.getExprBlockOpenMarker(),
             replConfigForScript.getCommentBlockOpenMarker(),
             replConfigForScript.getBlockCloseMarker()
