@@ -331,11 +331,12 @@ public class ShellUtils {
                     )
                 );
             }
-            if (line.stripLeading().startsWith(commentBlockOpenMarker)) {
+            line = line.trim();
+            if (line.startsWith(commentBlockOpenMarker)) {
                 depth++;
                 continue;
             }
-            if (line.trim().equals(commentBlockCloseMarker)) {
+            if (line.equals(commentBlockCloseMarker)) {
                 depth--;
                 if (depth == 0) {
                     return;
