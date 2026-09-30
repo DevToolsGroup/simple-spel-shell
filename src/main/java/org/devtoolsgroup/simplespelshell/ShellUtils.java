@@ -325,7 +325,6 @@ public class ShellUtils {
             String line = lineReader.readLine();
             if (line == null) {
                 throw new ShellException(
-                    false,
                     "Unterminated comment block: reached end of input before a closing '%s' line.".formatted(
                         commentBlockCloseMarker
                     )
@@ -356,7 +355,6 @@ public class ShellUtils {
             String line = lineReader.readLine();
             if (line == null) {
                 throw new ShellException(
-                    false,
                     "Unterminated expression block: reached end of input before a closing '%s' line.".formatted(
                         exprBlockCloseMarker
                     )

@@ -94,7 +94,10 @@ class ShellUtilsTest {
     @Test
     void expressionReaderThrowsOnUnterminatedExpressionBlock() {
         ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("<< foo\nbar"));
-        Assertions.assertFalse(ex.isPrintStackTrace());
+        Assertions.assertTrue(ex.isPrintStackTrace());
+        Assertions.assertEquals(
+            "Unterminated expression block: reached end of input before a closing '>>' line.", ex.getMessage()
+        );
     }
 
     @Test
@@ -126,7 +129,8 @@ class ShellUtilsTest {
     @Test
     void expressionReaderThrowsOnUnterminatedCommentBlock() {
         ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("//<< foo\nbar"));
-        Assertions.assertFalse(ex.isPrintStackTrace());
+        Assertions.assertTrue(ex.isPrintStackTrace());
+        Assertions.assertEquals("Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage());
     }
 
     @Test
@@ -153,7 +157,10 @@ class ShellUtilsTest {
             "1+1"
         );
         ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression(text));
-        Assertions.assertFalse(ex.isPrintStackTrace());
+        Assertions.assertTrue(ex.isPrintStackTrace());
+        Assertions.assertEquals(
+            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+        );
     }
 
     @Test
