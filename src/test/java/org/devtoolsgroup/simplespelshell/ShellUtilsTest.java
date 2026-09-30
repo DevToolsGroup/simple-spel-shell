@@ -84,11 +84,90 @@ class ShellUtilsTest {
     }
 
     @Test
-    void expressionReaderTreatsExpressionBlockContentVerbatimNoCommentOrBackslashHandlingInside() {
+    void expressionReaderTreatsOpenerLineRemainderAndBackslashesInsideExpressionBlockVerbatim() {
         Assertions.assertEquals(
             " // not a comment in herestill \\ literal backslash",
             readOneExpression("<< // not a comment in here\nstill \\ literal backslash\n>>")
         );
+    }
+
+    @Test
+    void expressionReaderSkipsSingleLineCommentsInsideExpressionBlock() {
+        Assertions.assertEquals("abcghi", readOneExpression("<<abc\n//def\nghi\n>>"));
+        Assertions.assertEquals("abcghi", readOneExpression("<<abc\n    // def\nghi\n>>"));
+        // '//' not at the start of a line is literal content.
+        Assertions.assertEquals("url('http://x')", readOneExpression("<<url('http://x')\n>>"));
+        Assertions.assertEquals("a.url('http://x')", readOneExpression("<<a\n.url('http://x')\n>>"));
+    }
+
+    @Test
+    void expressionReaderSkipsCommentBlocksInsideExpressionBlock() {
+        String text = String.join("\n",
+            "<<config = configBuilder()",
+            "    //.url('some-url')",
+            "    .url('test-url')",
+            "    //<<.username('abc')",
+            "    .password('def')",
+            "    >>",
+            "    .username('test-abc')",
+            "    .password('test-def')",
+            ">>"
+        );
+        Assertions.assertEquals(
+            "config = configBuilder()    .url('test-url')    .username('test-abc')    .password('test-def')",
+            readOneExpression(text)
+        );
+    }
+
+    @Test
+    void expressionReaderSkipsNestedCommentBlocksInsideExpressionBlock() {
+        String text = String.join("\n",
+            "<<abc",
+            "//<< outer",
+            "    //<< inner",
+            "    >>",
+            "    still comment",
+            ">>",
+            "def",
+            ">>"
+        );
+        Assertions.assertEquals("abcdef", readOneExpression(text));
+    }
+
+    @Test
+    void expressionReaderThrowsOnUnterminatedCommentBlockInsideExpressionBlock() {
+        ShellException ex = Assertions.assertThrows(
+            ShellException.class, () -> readOneExpression("<<abc\n//<< comment\nbar")
+        );
+        Assertions.assertEquals(
+            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+        );
+    }
+
+    @Test
+    void expressionReaderUsesConfiguredCommentMarkersInsideExpressionBlock() {
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("#{foo\n# line comment\n//still content\n/*\nblock comment\n*/\nbar\n}#"),
+            "#{",
+            "}#",
+            "#",
+            "/*",
+            "*/"
+        ).readExpression();
+        Assertions.assertEquals("foo//still contentbar", result);
+    }
+
+    @Test
+    void expressionReaderKeepsCommentLikeLinesInsideExpressionBlockWhenCommentMarkersDisabled() {
+        String result = ShellUtils.expressionReader(
+            ShellUtils.lineReader("<<foo\n//bar\n>>"),
+            ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
+            ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
+            null,
+            null,
+            null
+        ).readExpression();
+        Assertions.assertEquals("foo//bar", result);
     }
 
     @Test

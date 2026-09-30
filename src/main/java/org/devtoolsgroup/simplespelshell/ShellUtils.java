@@ -299,7 +299,15 @@ public class ShellUtils {
                     continue;
                 }
                 if (exprBlockOpenMarker != null && withoutLeadingWs.startsWith(exprBlockOpenMarker)) {
-                    return readExpressionBlock(lineReader, withoutLeadingWs, exprBlockOpenMarker, exprBlockCloseMarker);
+                    return readExpressionBlock(
+                        lineReader,
+                        withoutLeadingWs,
+                        exprBlockOpenMarker,
+                        exprBlockCloseMarker,
+                        commentLineMarker,
+                        commentBlockOpenMarker,
+                        commentBlockCloseMarker
+                    );
                 }
             }
             if (isCommentLine(line, commentLineMarker)) {
@@ -348,7 +356,10 @@ public class ShellUtils {
         LineReader lineReader,
         String openerLine,
         String exprBlockOpenMarker,
-        String exprBlockCloseMarker
+        String exprBlockCloseMarker,
+        String commentLineMarker,
+        String commentBlockOpenMarker,
+        String commentBlockCloseMarker
     ) {
         StringBuilder sb = new StringBuilder(openerLine.substring(exprBlockOpenMarker.length()));
         while (true) {
@@ -362,6 +373,13 @@ public class ShellUtils {
             }
             if (line.trim().equals(exprBlockCloseMarker)) {
                 return sb.toString();
+            }
+            if (commentBlockOpenMarker != null && line.stripLeading().startsWith(commentBlockOpenMarker)) {
+                skipCommentBlock(lineReader, commentBlockOpenMarker, commentBlockCloseMarker);
+                continue;
+            }
+            if (isCommentLine(line, commentLineMarker)) {
+                continue;
             }
             sb.append(line);
         }
