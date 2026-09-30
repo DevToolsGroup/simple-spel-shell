@@ -64,8 +64,8 @@ public class ShellUtils {
     public static final String DEFAULT_EXPR_BLOCK_OPEN_MARKER = "<<";
     public static final String DEFAULT_EXPR_BLOCK_CLOSE_MARKER = ">>";
     public static final String DEFAULT_COMMENT_LINE_MARKER = "//";
-    public static final String DEFAULT_COMMENT_BLOCK_OPEN_MARKER = "//<<";
-    public static final String DEFAULT_COMMENT_BLOCK_CLOSE_MARKER = ">>";
+    public static final String DEFAULT_COMMENT_BLOCK_OPEN_MARKER = "/*";
+    public static final String DEFAULT_COMMENT_BLOCK_CLOSE_MARKER = "*/";
     private static final Pattern NAME_SPLIT_PAT = Pattern.compile(
         "(?<=[a-z])(?=[A-Z])" +
             "|(?<=[^_])(?=_)|(?<=_)(?=[^_])" +

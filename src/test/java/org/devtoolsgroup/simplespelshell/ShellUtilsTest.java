@@ -105,26 +105,26 @@ class ShellUtilsTest {
     @Test
     void expressionReaderStartsCommentBlockOnExpressionBlockOpenerLine() {
         String text = String.join("\n",
-            "<< //<< comment block",
+            "<< /* comment block",
             "still comment",
-            "    //<< nested",
-            "    >>",
-            ">>",
+            "    /* nested",
+            "    */",
+            "*/",
             "expression",
             "continuation",
             ">>"
         );
         Assertions.assertEquals("expressioncontinuation", readOneExpression(text));
-        Assertions.assertEquals("abc", readOneExpression("<<//<<no space\n>>\nabc\n>>"));
+        Assertions.assertEquals("abc", readOneExpression("<</*no space\n*/\nabc\n>>"));
     }
 
     @Test
     void expressionReaderThrowsOnUnterminatedCommentBlockStartedOnExpressionBlockOpenerLine() {
         ShellException ex = Assertions.assertThrows(
-            ShellException.class, () -> readOneExpression("<< //<< comment\nabc")
+            ShellException.class, () -> readOneExpression("<< /* comment\nabc")
         );
         Assertions.assertEquals(
-            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+            "Unterminated comment block: reached end of input before a closing '*/' line.", ex.getMessage()
         );
     }
 
@@ -156,9 +156,9 @@ class ShellUtilsTest {
             "<<config = configBuilder()",
             "    //.url('some-url')",
             "    .url('test-url')",
-            "    //<<.username('abc')",
+            "    /*.username('abc')",
             "    .password('def')",
-            "    >>",
+            "    */",
             "    .username('test-abc')",
             "    .password('test-def')",
             ">>"
@@ -173,11 +173,11 @@ class ShellUtilsTest {
     void expressionReaderSkipsNestedCommentBlocksInsideExpressionBlock() {
         String text = String.join("\n",
             "<<abc",
-            "//<< outer",
-            "    //<< inner",
-            "    >>",
+            "/* outer",
+            "    /* inner",
+            "    */",
             "    still comment",
-            ">>",
+            "*/",
             "def",
             ">>"
         );
@@ -187,22 +187,22 @@ class ShellUtilsTest {
     @Test
     void expressionReaderThrowsOnUnterminatedCommentBlockInsideExpressionBlock() {
         ShellException ex = Assertions.assertThrows(
-            ShellException.class, () -> readOneExpression("<<abc\n//<< comment\nbar")
+            ShellException.class, () -> readOneExpression("<<abc\n/* comment\nbar")
         );
         Assertions.assertEquals(
-            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+            "Unterminated comment block: reached end of input before a closing '*/' line.", ex.getMessage()
         );
     }
 
     @Test
     void expressionReaderUsesConfiguredCommentMarkersInsideExpressionBlock() {
         String result = ShellUtils.expressionReader(
-            ShellUtils.lineReader("#{foo\n# line comment\n//still content\n/*\nblock comment\n*/\nbar\n}#"),
+            ShellUtils.lineReader("#{foo\n# line comment\n//still content\n(*\nblock comment\n*)\nbar\n}#"),
             "#{",
             "}#",
             "#",
-            "/*",
-            "*/"
+            "(*",
+            "*)"
         ).readExpression();
         Assertions.assertEquals("foo//still contentbar", result);
     }
@@ -233,19 +233,19 @@ class ShellUtilsTest {
     void expressionReaderSkipsCommentBlockAndContinuesToNextExpression() {
         Assertions.assertEquals(
             "1+2",
-            readOneExpression("//<< a multiline comment\nthat uses a single //\nat the very beginning only\n>>\n1+2")
+            readOneExpression("/* a multiline comment\nthat spans\nseveral lines\n*/\n1+2")
         );
     }
 
     @Test
     void expressionReaderRequiresNoWhitespaceAfterCommentBlockOpener() {
-        Assertions.assertEquals("1+2", readOneExpression("//<<no space here\nstill discarded\n>>\n1+2"));
+        Assertions.assertEquals("1+2", readOneExpression("/*no space here\nstill discarded\n*/\n1+2"));
     }
 
     @Test
     void expressionReaderRecognizesCommentBlockIndependentlyOfCustomCommentLineMarker() {
         String result = ShellUtils.expressionReader(
-            ShellUtils.lineReader("//<< comment\nstill comment\n>>\n1+2"),
+            ShellUtils.lineReader("/* comment\nstill comment\n*/\n1+2"),
             ShellUtils.DEFAULT_EXPR_BLOCK_OPEN_MARKER,
             ShellUtils.DEFAULT_EXPR_BLOCK_CLOSE_MARKER,
             "#",
@@ -257,21 +257,21 @@ class ShellUtilsTest {
 
     @Test
     void expressionReaderThrowsOnUnterminatedCommentBlock() {
-        ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("//<< foo\nbar"));
+        ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression("/* foo\nbar"));
         Assertions.assertTrue(ex.isPrintStackTrace());
-        Assertions.assertEquals("Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage());
+        Assertions.assertEquals("Unterminated comment block: reached end of input before a closing '*/' line.", ex.getMessage());
     }
 
     @Test
     void expressionReaderSupportsNestedCommentBlocks() {
         String text = String.join(
             "\n",
-            "//<< main comment",
-            "    //<< nested comment",
-            "    >>",
-            "    //<< another nested comment",
-            "    >>",
-            ">>",
+            "/* main comment",
+            "    /* nested comment",
+            "    */",
+            "    /* another nested comment",
+            "    */",
+            "*/",
             "1+1"
         );
         Assertions.assertEquals("1+1", readOneExpression(text));
@@ -281,14 +281,14 @@ class ShellUtilsTest {
     void expressionReaderThrowsOnUnterminatedNestedCommentBlock() {
         String text = String.join(
             "\n",
-            "//<< main comment",
-            "    //<< nested comment, never closed",
+            "/* main comment",
+            "    /* nested comment, never closed",
             "1+1"
         );
         ShellException ex = Assertions.assertThrows(ShellException.class, () -> readOneExpression(text));
         Assertions.assertTrue(ex.isPrintStackTrace());
         Assertions.assertEquals(
-            "Unterminated comment block: reached end of input before a closing '>>' line.", ex.getMessage()
+            "Unterminated comment block: reached end of input before a closing '*/' line.", ex.getMessage()
         );
     }
 

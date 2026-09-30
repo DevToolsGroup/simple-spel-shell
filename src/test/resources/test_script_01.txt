@@ -16,18 +16,18 @@ he `len`
 3
 >>
 
-//<< a multiline comment block
-that uses a single //
-at the very beginning only
->>
+/* a multiline comment block
+that spans
+several lines
+*/
 1+1
 
-//<< main comment
-    //<< nested comment
-    >>
-    //<< another nested comment
-    >>
->>
+/* main comment
+    /* nested comment
+    */
+    /* another nested comment
+    */
+*/
 2+2
 
 // create multiple variables with long names and find them by pattern
