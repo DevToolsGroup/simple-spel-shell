@@ -24,6 +24,7 @@ SOFTWARE.
 
 package org.devtoolsgroup.simplespelshell;
 
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.expression.OperatorOverloader;
 
@@ -37,6 +38,8 @@ public interface SpelEvaluator {
     List<Converter<?, ?>> getTypeConverters();
 
     void setTypeConverters(List<Converter<?, ?>> typeConverters);
+
+    ConversionService getConversionService();
 
     void setOperatorOverloader(OperatorOverloader operatorOverloader);
 

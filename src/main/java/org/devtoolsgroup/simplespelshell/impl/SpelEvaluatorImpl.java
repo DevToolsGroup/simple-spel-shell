@@ -26,6 +26,7 @@ package org.devtoolsgroup.simplespelshell.impl;
 
 import org.devtoolsgroup.simplespelshell.EmptyOperatorOverloader;
 import org.devtoolsgroup.simplespelshell.SpelEvaluator;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.expression.OperatorOverloader;
@@ -49,6 +50,7 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     // and ArrayDeque rejects null elements.
     private final Deque<Object> argsStack = new LinkedList<>();
     private List<Converter<?, ?>> typeConverters = List.of();
+    private ConversionService conversionService;
     private StandardEvaluationContext spelCtx = new StandardEvaluationContext();
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
@@ -68,6 +70,12 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
         DefaultConversionService defaultConversionService = new DefaultConversionService();
         typeConverters.forEach(defaultConversionService::addConverter);
         spelCtx.setTypeConverter(new StandardTypeConverter(defaultConversionService));
+        conversionService = defaultConversionService;
+    }
+
+    @Override
+    public ConversionService getConversionService() {
+        return conversionService;
     }
 
     @Override
