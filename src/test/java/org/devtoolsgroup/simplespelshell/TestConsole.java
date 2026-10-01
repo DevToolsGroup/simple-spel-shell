@@ -26,11 +26,10 @@ package org.devtoolsgroup.simplespelshell;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.function.Predicate;
 
 public class TestConsole implements Console {
     private final List<String> lines = new LinkedList<>();
-    private final Predicate<String> isCommentLine;
+    private final String commentLineMarker;
     private final StringBuilder sb = new StringBuilder();
     private boolean debug;
     private int numberOfReads = 0;
@@ -38,8 +37,8 @@ public class TestConsole implements Console {
     private int numberOfPrints = 0;
     private int maxNumberOfPrints = 1000;
 
-    public TestConsole(LineReader lineReader, Predicate<String> isCommentLine) {
-        this.isCommentLine = isCommentLine;
+    public TestConsole(LineReader lineReader, String commentLineMarker) {
+        this.commentLineMarker = commentLineMarker;
         String line = lineReader.readLine();
         while (line != null) {
             lines.add(line);
@@ -87,7 +86,7 @@ public class TestConsole implements Console {
     public void readAndPrintComments() {
         for (int i = 0; i < lines.size(); i++) {
             String line = lines.get(i);
-            if (line.isBlank() || isCommentLine.test(line)) {
+            if (line.isBlank() || ShellUtils.isCommentLine(line, commentLineMarker)) {
                 println(line);
             } else {
                 return;

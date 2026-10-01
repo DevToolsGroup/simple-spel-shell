@@ -2,13 +2,13 @@
 
 ## 1. General description
 
-Today, `runScript(...)` runs a sequence of SpEL expressions read from a string,
-a `LineReader`, or (via `FileSystemAwareSpelShell`) a file `Path`,
-but a script has no way to receive input from its caller.
-Any data has to flow in through global shell state (variables set with `var(...)` before the call),
-which is awkward and leaks state the script didn't ask for.
+`runScript(...)` runs a sequence of SpEL expressions read from a string,
+a `LineReader`, or (via `FileSystemAwareSpelShell`) a file `Path`.
+A caller can pass input to such a script through an *args* parameter,
+instead of routing data through global shell state (variables set with `var(...)` before the call),
+which would be awkward and would leak state the script didn't ask for.
 
-This feature adds an *args* parameter to every `runScript(...)` overload, and to `runRepl()` as well.
+Every `runScript(...)` overload, and `runRepl()` as well, has a variant taking an `Object args` parameter.
 The value passed in is made available inside the script
 (or the interactive session) as the SpEL variable `#_` by default,
 without clobbering the args of whichever script/REPL (if any) is already running when the nested call is made.
@@ -27,7 +27,7 @@ in case `_` collides with something a particular application wants to use for it
 
 ## 2. How it can be used
 
-Every existing `runScript` overload gains a sibling that takes an `Object args` parameter, and so does `runRepl`:
+The args-taking overloads are:
 
 ```java
 // CoreSpelShell
@@ -39,7 +39,7 @@ Object runScript(LineReader scriptLineReader, Object args);
 Object runScript(Path path, Object args);
 ```
 
-The existing no-arg overloads are kept as-is and simply mean "no args"
+The no-arg overloads simply mean "no args"
 (see [Implementation details](#3-implementation-details) for exactly what that implies).
 
 Inside a script, the args are read via `#_`, like any other SpEL variable:
@@ -170,7 +170,11 @@ public Object runScript(String script) {
 public Object runScript(String script, Object args) {
     ExpressionReader expressionReader = ShellUtils.expressionReader(
         ShellUtils.lineReader(script),
-        line -> replConfigForScript.getIsCommentLine().apply(getRootObject(), line)
+        replConfigForScript.getExprBlockOpenMarker(),
+        replConfigForScript.getExprBlockCloseMarker(),
+        replConfigForScript.getCommentLineMarker(),
+        replConfigForScript.getCommentBlockOpenMarker(),
+        replConfigForScript.getCommentBlockCloseMarker()
     );
     return runWithArgs(args, () -> runRepl(replConfigForScript, expressionReader));
 }

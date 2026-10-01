@@ -168,10 +168,7 @@ class ScriptArgsTest {
 
     private static void connectConsole(BaseSpelShellImpl shell, String script) {
         LineReader lineReader = ShellUtils.lineReader(script);
-        TestConsole console = new TestConsole(
-            lineReader,
-            line -> shell.getReplConfig().getIsCommentLine().apply(null, line)
-        );
+        TestConsole console = new TestConsole(lineReader, shell.getReplConfig().getCommentLineMarker());
         shell.setConsole(console);
     }
 

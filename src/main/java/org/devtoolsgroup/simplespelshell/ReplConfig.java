@@ -32,8 +32,12 @@ import java.util.function.Function;
 public class ReplConfig {
 
     private File exprHistoryFile;
-    private BiFunction<Object, String, Boolean> isCommentLine;
     private Function<Object, String> prompt;
+    private String exprBlockOpenMarker;
+    private String exprBlockCloseMarker;
+    private String commentLineMarker;
+    private String commentBlockOpenMarker;
+    private String commentBlockCloseMarker;
     private BiFunction<Object, String, String> expressionInterceptor;
     private BiConsumer<Object, String> exprBeforeEvalInterceptor;
     private BiConsumer<Object, Object> evalResultInterceptor;
@@ -53,14 +57,6 @@ public class ReplConfig {
 
     public void setExpressionInterceptor(BiFunction<Object, String, String> expressionInterceptor) {
         this.expressionInterceptor = expressionInterceptor;
-    }
-
-    public BiFunction<Object, String, Boolean> getIsCommentLine() {
-        return isCommentLine;
-    }
-
-    public void setIsCommentLine(BiFunction<Object, String, Boolean> isCommentLine) {
-        this.isCommentLine = isCommentLine;
     }
 
     public BiConsumer<Object, String> getExprBeforeEvalInterceptor() {
@@ -93,5 +89,45 @@ public class ReplConfig {
 
     public void setStopOnException(Class<? extends Exception> stopOnException) {
         this.stopOnException = stopOnException;
+    }
+
+    public String getExprBlockOpenMarker() {
+        return exprBlockOpenMarker;
+    }
+
+    public void setExprBlockOpenMarker(String exprBlockOpenMarker) {
+        this.exprBlockOpenMarker = exprBlockOpenMarker;
+    }
+
+    public String getExprBlockCloseMarker() {
+        return exprBlockCloseMarker;
+    }
+
+    public void setExprBlockCloseMarker(String exprBlockCloseMarker) {
+        this.exprBlockCloseMarker = exprBlockCloseMarker;
+    }
+
+    public String getCommentLineMarker() {
+        return commentLineMarker;
+    }
+
+    public void setCommentLineMarker(String commentLineMarker) {
+        this.commentLineMarker = commentLineMarker;
+    }
+
+    public String getCommentBlockOpenMarker() {
+        return commentBlockOpenMarker;
+    }
+
+    public void setCommentBlockOpenMarker(String commentBlockOpenMarker) {
+        this.commentBlockOpenMarker = commentBlockOpenMarker;
+    }
+
+    public String getCommentBlockCloseMarker() {
+        return commentBlockCloseMarker;
+    }
+
+    public void setCommentBlockCloseMarker(String commentBlockCloseMarker) {
+        this.commentBlockCloseMarker = commentBlockCloseMarker;
     }
 }

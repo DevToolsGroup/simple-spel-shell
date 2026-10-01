@@ -67,7 +67,7 @@ addTask 'Buy milk'
 addTask 'Walk the dog'
 ```
 
-`//`-prefixed lines are comments by default (`ReplConfig.getIsCommentLine()`),
+`//`-prefixed lines are comments by default (`ReplConfig.getCommentLineMarker()`),
 and — as shown here — shorthand syntax works inside scripts exactly as it does interactively,
 since it's the same `expressionInterceptor` doing the rewriting either way.
 
@@ -125,6 +125,29 @@ becoming `addTask('Draft the Q3 planning doc, circulate it for review, and sched
 — note the trailing space before the `\` on the first line;
 drop it and the two halves join with no separator at all, producing `review,and` instead.
 `readExpr` keeps consuming lines as long as each one ends in `\`, so a chain can span more than two lines the same way.
+
+## An alternative: multiline blocks
+
+The trailing-`\` approach above needs every line to end in `\`.
+A second mechanism covers the same need without a per-line marker — `<<` is essentially a stand-in for a whole
+chain of trailing-`\` continuations, and behaves exactly like one: lines are concatenated with nothing inserted:
+
+```
+<< addTask('Draft the Q3 planning doc, circulate it for review,
+ and schedule the kickoff meeting')
+>>
+```
+
+(note the leading space before `and` on the second line — drop it and the two halves join with no separator
+at all, producing `review,and` instead)
+
+No whitespace is required right after `<<` at all — content can start immediately
+(`<<addTask(...)`) with nothing stripped or added.
+
+A similar `/*` ... `*/` block works as a multiline comment, and can itself contain further nested comment blocks.
+Both `//` lines and `/*` ... `*/` blocks can also be used inside an expression block to comment out some of its lines.
+See [Multiline Expressions and Comments](../features/multiline-expressions-and-comments.md) for the full syntax,
+including comment-block nesting, comments inside expression blocks, and how to configure the markers.
 
 ---
 Previous: [6. Controlling Help and Shorthand Visibility with @Order](06-order-and-help-visibility.md) · Next: [8. Sub-shells and Menu-Driven CLIs](08-submenus.md)

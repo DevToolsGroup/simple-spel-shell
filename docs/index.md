@@ -54,7 +54,7 @@ with links back to the tutorial page that teaches each concept in context.
 - [Shell Classes](reference/shell-classes.md)
 — `CoreSpelShellImpl` / `BaseSpelShellImpl` / `FileSystemAwareSpelShellImpl`.
 - [Built-in Commands](reference/built-in-commands.md) — every command your shell gets without writing a line of code.
-- [ReplConfig](reference/repl-config.md) — all five REPL hooks in one table.
+- [ReplConfig](reference/repl-config.md) — all four REPL hooks, plus comment and block markers, in one table.
 - [ShellUtils](reference/shell-utils.md) — the shorthand rewrite rules, fuzzy matching, and other static helpers.
 - [Exceptions](reference/exceptions.md) — `ShellException` and `ShellExitException`.
 
@@ -67,3 +67,6 @@ than the tutorial or reference pages do.
 
 - [Script Arguments](features/script-args.md) — passing an `Object args` value into `runScript(...)`/`runRepl()`,
 read back inside as `#_` — mentioned in passing on [tutorial page 7](tutorial/07-history-and-scripting.md).
+- [Multiline Expressions and Comments](features/multiline-expressions-and-comments.md)
+— `<<`/`>>` and `/*`/`*/` blocks as a configurable alternative to trailing-`\` continuation and `//` comment
+lines — mentioned on [tutorial page 7](tutorial/07-history-and-scripting.md).

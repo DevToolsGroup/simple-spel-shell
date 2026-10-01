@@ -10,6 +10,26 @@ he `len
 // `pat` gets replaced with npat('pat')
 he `len`
 
+// a multiline expression block, joined with no separator, just like trailing slashes
+<<1+
+2+
+3
+>>
+
+/* a multiline comment block
+that spans
+several lines
+*/
+1+1
+
+/* main comment
+    /* nested comment
+    */
+    /* another nested comment
+    */
+*/
+2+2
+
 // create multiple variables with long names and find them by pattern
 maximumElement=104
 minimumElement=28
