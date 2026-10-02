@@ -246,6 +246,12 @@ public class CoreSpelShellImpl implements CoreSpelShell {
         lastEvalResultVarName = varName;
     }
 
+    @Order(-1000)
+    @Override
+    public String getLastEvalResultVarName() {
+        return lastEvalResultVarName;
+    }
+
     @Order(-100)
     @Override
     public void setLastEvalResultMaxPrintLength(int lastEvalResultMaxPrintLength) {
