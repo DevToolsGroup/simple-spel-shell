@@ -54,6 +54,10 @@ public class SpelEvaluatorImpl implements SpelEvaluator {
     private StandardEvaluationContext spelCtx = new StandardEvaluationContext();
     private final SpelExpressionParser parser = new SpelExpressionParser();
 
+    public SpelEvaluatorImpl() {
+        setTypeConverters(List.of());
+    }
+
     @Override
     public Object evaluate(Object rootObject, String expression) {
         return parser.parseExpression(expression).getValue(spelCtx, rootObject, Object.class);

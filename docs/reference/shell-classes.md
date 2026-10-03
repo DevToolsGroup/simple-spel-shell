@@ -24,10 +24,17 @@ Introduced: [page 1](../tutorial/01-getting-started.md).
 | `getConsole()` / `setConsole(Console)`                            | The I/O abstraction (`read`/`print`/`println`/`printf`).                                                                                        |
 | `getReplConfig()` / `setReplConfig(ReplConfig)`                   | Interactive-loop configuration — see [ReplConfig reference](repl-config.md).                                                                    |
 | `getReplConfigForScript()` / `setReplConfigForScript(ReplConfig)` | Separate configuration used by `runScript(...)`.                                                                                                |
-| `setLastEvalResultVarName(String)`                                | Default `"$"` — see [page 14](../tutorial/14-other-extension-points.md).                                                                        |
+| `getLastEvalResultVarName()` / `setLastEvalResultVarName(String)` | Default `"$"` — see [page 14](../tutorial/14-other-extension-points.md).                                                                        |
 | `setLastEvalResultMaxPrintLength(int)`                            | Default `100` — see [page 14](../tutorial/14-other-extension-points.md).                                                                        |
 
 Protected, overridable: `isMethodToHideInRewrite(Method)` ([page 14](../tutorial/14-other-extension-points.md)).
+
+The `SpelEvaluator` returned by `getSpelEvaluator()` carries the type-conversion setup:
+
+| Method                                                         | Notes                                                                                                                                                                           |
+|----------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `getTypeConverters()` / `setTypeConverters(List<Converter<?, ?>>)` | The registered converters; the setter replaces the whole list — see [page 11](../tutorial/11-custom-type-converters.md).                                                        |
+| `getConversionService()`                                       | The Spring `ConversionService` built by the last `setTypeConverters(...)` call, for converting values in your own code. |
 
 ## `BaseSpelShellImpl`
 
