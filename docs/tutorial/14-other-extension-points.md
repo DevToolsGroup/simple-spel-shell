@@ -37,6 +37,15 @@ the previous result is stashed under after every evaluation
 the default `evalResultInterceptor` (page 12) prints before truncating with `...`.
 Both have setters (`setLastEvalResultVarName`,
 `setLastEvalResultMaxPrintLength`) if the defaults don't suit your shell.
+`getLastEvalResultVarName()` reads the current name back,
+so your own code can look up the previous result without hard-coding `"$"`:
+
+```java
+Object last = getSpelEvaluator().getVariable(getLastEvalResultVarName());
+```
+
+Both the getter and the setter for the name are `@Order(-1000)` plumbing (page 6),
+so neither is shorthand-eligible nor listed by `help`.
 
 ## What isn't pluggable yet
 

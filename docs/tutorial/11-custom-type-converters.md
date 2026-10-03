@@ -112,5 +112,22 @@ and reaches for the registered `TypeConverter` to bridge the gap
 — the same conversion step that already makes `cd('tasks')` work for a `Path` parameter,
 just with a converter you wrote instead of one the framework shipped.
 
+## Converting values yourself
+
+The same conversions are available outside of SpEL's method-argument matching.
+`getSpelEvaluator().getConversionService()` returns the Spring `ConversionService`
+that the registered converters were installed into
+— Spring's defaults plus everything passed to `setTypeConverters(...)`.
+Use it when a command receives a loosely typed value, such as a line returned by `prompt`,
+and you want it converted by the same rules the prompt uses:
+
+```java
+LocalDate date = getSpelEvaluator().getConversionService().convert("2026-09-20", LocalDate.class);
+```
+
+One thing to keep in mind.
+Each `setTypeConverters(...)` call builds a new `ConversionService`,
+so fetch it when you need it rather than caching the instance.
+
 ---
 Previous: [10. Error Handling: ShellException vs ShellExitException](10-error-handling.md) · Next: [12. REPL Hooks: Prompts, Comments, and Interceptors](12-repl-hooks.md)

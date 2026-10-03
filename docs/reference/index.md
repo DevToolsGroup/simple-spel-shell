@@ -25,6 +25,7 @@ See [documentation index](../index.md) for the tutorial this all comes from.
 | `ShellException` | Recoverable error — caught, message printed, REPL loop continues | [Exceptions](exceptions.md) | [10](../tutorial/10-error-handling.md) |
 | `ShellExitException` / `stopOnException` | What ends the REPL loop | [Exceptions](exceptions.md), [ReplConfig](repl-config.md) | [10](../tutorial/10-error-handling.md) |
 | `SpelEvaluator.setTypeConverters` | Implicit type conversion | [Shell Classes](shell-classes.md) | [11](../tutorial/11-custom-type-converters.md) |
+| `SpelEvaluator.getConversionService` | The `ConversionService` SpEL converts with, for use in your own code | [Shell Classes](shell-classes.md) | [11](../tutorial/11-custom-type-converters.md) |
 | `ReplConfig` | four hooks: `prompt`, `expressionInterceptor`, `exprBeforeEvalInterceptor`, `evalResultInterceptor`; plus comment and block markers such as `commentLineMarker` | [ReplConfig](repl-config.md) | [12](../tutorial/12-repl-hooks.md) |
 | `SpelEvaluator.setOperatorOverloader` | Give SpEL operators new meaning for your own types | [Shell Classes](shell-classes.md) | [13](../tutorial/13-operator-overloading.md) |
 | `isMethodToHideInRewrite` / `isMethodToHideInHelp` | Lower-level overridable hooks | [Shell Classes](shell-classes.md) | [14](../tutorial/14-other-extension-points.md) |
